@@ -25,8 +25,8 @@ const GlobalModals = () => {
   const [isAddingNew, setIsAddingNew] = React.useState(false);
 
   const filteredProducts = products.filter(p => {
-    const matchesText = p.name.toLowerCase().includes(searchProduct.toLowerCase()) || 
-                       p.brand.toLowerCase().includes(searchProduct.toLowerCase());
+    const matchesText = (p.name || '').toLowerCase().includes(searchProduct.toLowerCase()) || 
+                       (p.brand || '').toLowerCase().includes(searchProduct.toLowerCase());
     const matchesCat = searchCategory === 'Todas' || p.category === searchCategory;
     return matchesText && matchesCat;
   });
@@ -159,7 +159,7 @@ const GlobalModals = () => {
 
                        {/* Filtro de Categorías rápido */}
                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex gap-2 overflow-x-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
-                          {['Todas', ...categories.map(c => c.name)].map(cat => (
+                          {['Todas', ...(categories || []).map(c => c.name)].map(cat => (
                              <button
                                 key={cat}
                                 type="button"
