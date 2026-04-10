@@ -101,7 +101,11 @@ export const InventoryProvider = ({ children }) => {
     settings,
     loading,
     refreshData,
-    setSettings
+    setSettings,
+    onAddPurchase: () => {}, // Stubs to prevent crashes if called elsewhere
+    onSaveEditPurchase: () => {},
+    onAddSale: () => {},
+    onExportExcel: () => {}
   };
 
   return (

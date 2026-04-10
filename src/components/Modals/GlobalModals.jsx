@@ -27,7 +27,7 @@ const GlobalModals = () => {
     name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' 
   });
 
-  const filteredProducts = products.filter(p => {
+  const filteredProducts = (products || []).filter(p => {
     const matchesText = (p.name || '').toLowerCase().includes(searchProduct.toLowerCase()) || 
                        (p.brand || '').toLowerCase().includes(searchProduct.toLowerCase());
     const matchesCat = searchCategory === 'Todas' || p.category === searchCategory;
@@ -104,11 +104,55 @@ const GlobalModals = () => {
     }
   };
 
-  const selectedSaleProduct = products.find(p => p.id === saleForm.product_id);
+  const selectedSaleProduct = (products || []).find(p => p.id === saleForm.product_id);
   const costAtTime = selectedSaleProduct ? (selectedSaleProduct.currency === 'PEN' ? selectedSaleProduct.cost_pen : selectedSaleProduct.cost_clp * (parseFloat(settings.exchange_rate) || 0.0039)) : 0;
   const estimatedProfit = (saleForm.sale_price_pen - costAtTime) * saleForm.quantity;
 
-  const selectedPurchaseProduct = products.find(p => p.id === purchaseForm.product_id);
+  const selectedPurchaseProduct = (products || []).find(p => p.id === purchaseForm.product_id);
+
+  const [editPurchaseForm, setEditPurchaseForm] = React.useState(null);
+
+  React.useEffect(() => {
+    if (modals.editPurchase && modalData) {
+      setEditPurchaseForm({
+        quantity: modalData.quantity,
+        cost_clp: modalData.cost_clp,
+        cost_pen: modalData.cost_pen,
+        currency: modalData.currency,
+        date: modalData.date ? modalData.date.split('T')[0] : ''
+      });
+    }
+  }, [modals.editPurchase, modalData]);
+
+  const handleEditPurchaseSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const original = modalData;
+      
+      // 1. Actualizar la compra
+      const { error: pErr } = await supabase.from('purchases').update(editPurchaseForm).eq('id', original.id);
+      if (pErr) throw pErr;
+
+      // 2. Ajustar Stock del Producto
+      const prod = (products || []).find(p => p.id === original.product_id);
+      if (prod) {
+        const diff = editPurchaseForm.quantity - original.quantity;
+        const newStock = (prod.stock || 0) + diff;
+        
+        const updateData = { stock: newStock };
+        if (editPurchaseForm.currency === 'CLP') updateData.cost_clp = editPurchaseForm.cost_clp;
+        else updateData.cost_pen = editPurchaseForm.cost_pen;
+
+        const { error: uErr } = await supabase.from('products').update(updateData).eq('id', prod.id);
+        if (uErr) throw uErr;
+      }
+
+      closeModal('editPurchase');
+      refreshData(true);
+    } catch (e) {
+      alert(`Error al editar abastecimiento: ${e.message}`);
+    }
+  };
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
@@ -154,7 +198,7 @@ const GlobalModals = () => {
                   <CustomSelect 
                     value={productForm.category} 
                     onChange={val => setProductForm({...productForm, category: val})}
-                    options={categories.map(c => c.name)}
+                    options={(categories || []).map(c => c.name)}
                     className="h-14"
                   />
               </div>
@@ -272,7 +316,7 @@ const GlobalModals = () => {
                        </div>
 
                        <div className="max-h-[250px] overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                          {filteredProducts
+                          {(filteredProducts || [])
                             .filter(p => (p.stock || 0) > 0)
                             .map(p => (
                              <button
@@ -397,7 +441,7 @@ const GlobalModals = () => {
 
                        {/* Filtro de Categorías rápido */}
                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex gap-2 overflow-x-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
-                          {['Todas', ...categories.map(c => c.name)].map(cat => (
+                          {['Todas', ...(categories || []).map(c => c.name)].map(cat => (
                              <button
                                 key={cat}
                                 type="button"
@@ -414,7 +458,7 @@ const GlobalModals = () => {
                        </div>
 
                        <div className="max-h-[250px] overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                          {filteredProducts.map(p => (
+                          {(filteredProducts || []).map(p => (
                              <button
                                 key={p.id}
                                 type="button"
@@ -539,7 +583,7 @@ const GlobalModals = () => {
         title="Detalle de Transacción"
         icon={ShoppingCart}
       >
-        {modalData && (
+        {modals.saleDetail && modalData && (
           <div className="space-y-8 py-4">
              <div className="flex flex-col items-center text-center space-y-3">
                 <div className="w-20 h-20 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center text-emerald-600">
@@ -598,6 +642,85 @@ const GlobalModals = () => {
                 </div>
              </div>
           </div>
+        )}
+      </Modal>
+      <Modal 
+        isOpen={modals.editPurchase} 
+        onClose={() => closeModal('editPurchase')} 
+        title="Editar Registro de Compra"
+        icon={TrendingUp}
+      >
+        {editPurchaseForm && modalData && (
+          <form onSubmit={handleEditPurchaseSubmit} className="space-y-6">
+             <div className="p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-2xl border border-indigo-100 dark:border-indigo-500/10">
+                <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Producto seleccionado</p>
+                <p className="text-sm font-black uppercase mt-1">{modalData.product_name}</p>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Cantidad comprada</label>
+                   <div className="relative group">
+                      <Hash size={16} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
+                      <input 
+                        type="number" 
+                        required 
+                        min="1"
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-indigo-500/20 outline-none tabular-nums shadow-inner transition-all" 
+                        value={editPurchaseForm.quantity} 
+                        onChange={e => setEditPurchaseForm({...editPurchaseForm, quantity: parseInt(e.target.value)})} 
+                      />
+                   </div>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Fecha de Ingreso</label>
+                   <div className="relative group">
+                      <CalendarIcon size={16} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
+                      <input 
+                        type="date" 
+                        required 
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-[11px] font-black rounded-2xl border-2 border-transparent focus:border-indigo-500/20 outline-none uppercase shadow-inner transition-all" 
+                        value={editPurchaseForm.date} 
+                        onChange={e => setEditPurchaseForm({...editPurchaseForm, date: e.target.value})} 
+                      />
+                   </div>
+                </div>
+             </div>
+
+             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 space-y-4">
+                <div className="flex justify-between items-center">
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Costo Unitario de Compra</label>
+                    <CustomSelect 
+                      value={editPurchaseForm.currency} 
+                      onChange={val => setEditPurchaseForm({...editPurchaseForm, currency: val})}
+                      options={['CLP', 'PEN']}
+                      className="w-24 h-11"
+                    />
+                </div>
+
+                <div className="relative group">
+                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-indigo-500 transition-colors uppercase">{editPurchaseForm.currency}</span>
+                   <input 
+                     type="number" 
+                     step="0.01"
+                     required 
+                     className="w-full h-16 bg-white dark:bg-slate-950 px-20 text-2xl font-black rounded-2xl border-2 border-transparent focus:border-indigo-500/20 outline-none transition-all text-indigo-600 tabular-nums shadow-sm" 
+                     value={editPurchaseForm.currency === 'CLP' ? (editPurchaseForm.cost_clp || '') : (editPurchaseForm.cost_pen || '')} 
+                     onChange={e => setEditPurchaseForm({
+                       ...editPurchaseForm, 
+                       [editPurchaseForm.currency === 'CLP' ? 'cost_clp' : 'cost_pen']: parseFloat(e.target.value)
+                     })} 
+                   />
+                </div>
+             </div>
+
+             <button 
+               type="submit" 
+               className="w-full h-16 bg-indigo-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
+             >
+               Guardar Cambios
+             </button>
+          </form>
         )}
       </Modal>
     </>

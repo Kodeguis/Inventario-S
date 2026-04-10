@@ -10,7 +10,9 @@ export const ModalProvider = ({ children }) => {
     purchase: false,
     product: false,
     export: false,
-    saleDetail: false
+    saleDetail: false,
+    editPurchase: false,
+    editSale: false
   });
 
   const [modalData, setModalData] = useState(null);

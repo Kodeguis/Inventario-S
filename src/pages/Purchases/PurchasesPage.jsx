@@ -22,6 +22,10 @@ const PurchasesPage = () => {
 
 
 
+  const handleRowClick = (purchase) => {
+    openModal('editPurchase', purchase);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -66,7 +70,11 @@ const PurchasesPage = () => {
                     const totalCostPEN = p.currency === 'PEN' ? (p.cost_pen * p.quantity) : (p.cost_clp * p.quantity * rate);
 
                     return (
-                      <tr key={p.id} className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300">
+                      <tr 
+                        key={p.id} 
+                        onClick={() => handleRowClick(p)}
+                        className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300 cursor-pointer"
+                      >
                          <td className="px-10 py-7">
                             <div className="flex items-center gap-4">
                                <Calendar size={16} className="text-slate-300" />
