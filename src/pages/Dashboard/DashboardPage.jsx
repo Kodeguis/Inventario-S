@@ -20,7 +20,7 @@ import { exportToExcel } from '../../utils/excelExport';
 import { supabase } from '../../lib/supabaseClient';
 
 const DashboardPage = () => {
-  const { products, sales, purchases, settings, loading } = useInventory();
+  const { products, sales, purchases, categories, settings, loading } = useInventory();
   const { openModal } = useModals();
   const [filterMonth, setFilterMonth] = React.useState('all');
   const [filterYear, setFilterYear] = React.useState('2026');
