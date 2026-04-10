@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { LogIn, ShieldCheck, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, ShieldCheck, User, Lock, Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +12,14 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // Trick: if user only types "sergio", we use "sergio@sistema.com"
+    const finalEmail = email.includes('@') ? email : `${email}@sistema.com`;
+
+    const { error } = await supabase.auth.signInWithPassword({ 
+      email: finalEmail, 
+      password 
+    });
     if (error) setError(error.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : error.message);
     setLoading(false);
   };
@@ -38,16 +45,16 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-5">
               <div className="space-y-2 group">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-indigo-400 transition-colors">Identificación de Usuario</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-indigo-400 transition-colors">Usuario Maestro</label>
                 <div className="relative">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                  <User className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={18}/>
                   <input 
-                    type="email" 
+                    type="text" 
                     required 
-                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-indigo-500/30 transition-all placeholder:text-slate-600" 
-                    placeholder="correo@ejemplo.com"
+                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-indigo-500/30 transition-all placeholder:text-slate-600 uppercase" 
+                    placeholder="EJ: SERGIO"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.toLowerCase())}
                   />
                 </div>
               </div>
