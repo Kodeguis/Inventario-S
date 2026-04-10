@@ -58,9 +58,25 @@ export const InventoryProvider = ({ children }) => {
       ]);
 
       setProducts(p || []);
-      setSales(s || []);
+      setProducts(p || []);
+      
+      // Flatten sales data
+      const flattenedSales = (s || []).map(item => ({
+        ...item,
+        product_name: item.products?.name || 'Producto Eliminado',
+        product_category: item.products?.category || 'General'
+      }));
+      setSales(flattenedSales);
+
       setCategories(c || []);
-      setPurchases(pu || []);
+
+      // Flatten purchases data
+      const flattenedPurchases = (pu || []).map(item => ({
+        ...item,
+        product_name: item.products?.name || 'Producto Eliminado',
+        product_category: item.products?.category || 'General'
+      }));
+      setPurchases(flattenedPurchases);
 
       if (stRows) {
         const stObj = {};
