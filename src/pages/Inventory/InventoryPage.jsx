@@ -21,10 +21,10 @@ const InventoryPage = () => {
     return (p.stock > 0) && matchesSearch && matchesCategory;
   });
 
-  if (loading) return <div className="h-[60vh] flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse">Escaneando existencias físicas...</div>;
+
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-right-4 duration-700">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
          <div>
            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Registro de Existencias</h2>

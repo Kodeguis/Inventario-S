@@ -20,10 +20,10 @@ const PurchasesPage = () => {
     p.product_category?.toLowerCase().includes(purchaseSearch.toLowerCase())
   );
 
-  if (loading) return <div className="h-[60vh] flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse">Obteniendo historial de abastecimiento...</div>;
+
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-right-4 duration-700">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
          <div>
            <h2 className="text-3xl font-black uppercase tracking-tight">Historial de Abastecimiento</h2>

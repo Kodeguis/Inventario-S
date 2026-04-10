@@ -36,20 +36,11 @@ const AppContent = () => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  if (isFirstLoad && loading) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center animate-out fade-out duration-700">
-      <div className="flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 animate-pulse">Iniciando Protocolos...</p>
-      </div>
-    </div>
-  );
-
   if (!user) return <LoginPage />;
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#020617] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors duration-300 antialiased overflow-x-hidden">
+      <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#020617] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans antialiased overflow-x-hidden">
         <Sidebar 
           darkMode={darkMode} 
           setDarkMode={setDarkMode} 
@@ -70,7 +61,7 @@ const AppContent = () => {
             </div>
         </div>
 
-        <main className="flex-1 flex flex-col items-center md:ml-64 transition-all duration-300">
+        <main className="flex-1 flex flex-col items-center md:ml-64">
           <div className="w-full max-w-7xl p-4 md:p-12">
             <Routes>
               <Route path="/" element={<DashboardPage />} />

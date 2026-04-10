@@ -61,10 +61,10 @@ const SettingsPage = () => {
     }
   };
 
-  if (loading) return <div className="h-[60vh] flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse">Cargando configuración del núcleo...</div>;
+
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12 animate-in zoom-in-95 duration-700">
+    <div className="space-y-10">
       <div className="flex items-center gap-5">
          <div className="p-3.5 bg-indigo-600 rounded-[1.25rem] text-white shadow-xl shadow-indigo-600/20">
             <Settings size={28}/>
