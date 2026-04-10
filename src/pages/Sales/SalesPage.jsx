@@ -7,13 +7,16 @@ import {
   FileSpreadsheet,
   ArrowUpRight,
   TrendingUp,
-  Plus
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
 import { exportToExcel } from '../../utils/excelExport';
+import { supabase } from '../../lib/supabaseClient';
 
 const SalesPage = () => {
-  const { sales, products, categories, purchases, loading } = useInventory();
+  const { sales, products, categories, purchases, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [saleSearch, setSaleSearch] = useState('');
 
@@ -32,6 +35,29 @@ const SalesPage = () => {
 
   const handleRowClick = (sale) => {
     openModal('saleDetail', sale);
+  };
+
+  const handleDelete = async (e, sale) => {
+    e.stopPropagation();
+    if (!window.confirm('¿ELIMINAR VENTA? El stock se devolverá automáticamente.')) return;
+
+    try {
+      const { error: dErr } = await supabase.from('sales').delete().eq('id', sale.id);
+      if (dErr) throw dErr;
+
+      const prod = (products || []).find(p => p.id === sale.product_id);
+      if (prod) {
+        await supabase.from('products').update({ stock: (prod.stock || 0) + sale.quantity }).eq('id', prod.id);
+      }
+      refreshData(true);
+    } catch (err) {
+      alert("Error eliminando: " + err.message);
+    }
+  };
+
+  const handleEdit = (e, sale) => {
+    e.stopPropagation();
+    openModal('editSale', sale);
   };
 
 
@@ -79,6 +105,7 @@ const SalesPage = () => {
                      <th className="px-10 py-6 text-center">Volumen</th>
                      <th className="px-10 py-6 text-right">Ticket Total</th>
                      <th className="px-10 py-6 text-right">Utilidad</th>
+                     <th className="px-10 py-6"></th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -116,6 +143,22 @@ const SalesPage = () => {
                              <span className="text-[13px] tabular-nums">S/ {(s.profit_pen || 0).toFixed(2)}</span>
                           </div>
                        </td>
+                       <td className="px-10 py-7 text-right">
+                          <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                               <button 
+                                 onClick={(e)=>handleEdit(e, s)} 
+                                 className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                               >
+                                 <Edit2 size={14}/>
+                               </button>
+                               <button 
+                                 onClick={(e)=>handleDelete(e, s)} 
+                                 className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all shadow-sm"
+                               >
+                                 <Trash2 size={14}/>
+                               </button>
+                           </div>
+                        </td>
                     </tr>
                   ))}
                </tbody>

@@ -6,12 +6,15 @@ import {
   Calendar,
   Box,
   ArrowDownLeft,
-  Plus
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
+import { supabase } from '../../lib/supabaseClient';
 
 const PurchasesPage = () => {
-  const { purchases, settings, loading } = useInventory();
+  const { purchases, products, settings, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [purchaseSearch, setPurchaseSearch] = useState('');
 
@@ -20,9 +23,27 @@ const PurchasesPage = () => {
     p.product_category?.toLowerCase().includes(purchaseSearch.toLowerCase())
   );
 
+  const handleDelete = async (e, purchase) => {
+    e.stopPropagation();
+    if (!window.confirm('¿ELIMINAR COMPRA? El stock se restará automáticamente.')) return;
 
+    try {
+      const { error: dErr } = await supabase.from('purchases').delete().eq('id', purchase.id);
+      if (dErr) throw dErr;
 
-  const handleRowClick = (purchase) => {
+      const prod = (products || []).find(p => p.id === purchase.product_id);
+      if (prod) {
+        const newStock = (prod.stock || 0) - purchase.quantity;
+        await supabase.from('products').update({ stock: Math.max(0, newStock) }).eq('id', prod.id);
+      }
+      refreshData(true);
+    } catch (err) {
+      alert("Error eliminando: " + err.message);
+    }
+  };
+
+  const handleEdit = (e, purchase) => {
+    e.stopPropagation();
     openModal('editPurchase', purchase);
   };
 
@@ -62,6 +83,7 @@ const PurchasesPage = () => {
                      <th className="px-10 py-6">Ítem Adquirido</th>
                      <th className="px-10 py-6 text-center">Cantidad</th>
                      <th className="px-10 py-6 text-right">Inversión (PEN)</th>
+                     <th className="px-10 py-6"></th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -72,8 +94,7 @@ const PurchasesPage = () => {
                     return (
                       <tr 
                         key={p.id} 
-                        onClick={() => handleRowClick(p)}
-                        className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300 cursor-pointer"
+                        className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300"
                       >
                          <td className="px-10 py-7">
                             <div className="flex items-center gap-4">
@@ -96,6 +117,22 @@ const PurchasesPage = () => {
                          <td className="px-10 py-7 text-right">
                             <div className="inline-block px-5 py-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-xl text-[14px] font-black tabular-nums border border-rose-100 dark:border-rose-900/50">
                                S/ {totalCostPEN.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </div>
+                         </td>
+                         <td className="px-10 py-7 text-right">
+                            <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                               <button 
+                                 onClick={(e)=>handleEdit(e, p)} 
+                                 className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                               >
+                                 <Edit2 size={14}/>
+                               </button>
+                               <button 
+                                 onClick={(e)=>handleDelete(e, p)} 
+                                 className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all shadow-sm"
+                               >
+                                 <Trash2 size={14}/>
+                               </button>
                             </div>
                          </td>
                       </tr>

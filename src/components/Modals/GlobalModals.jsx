@@ -154,6 +154,42 @@ const GlobalModals = () => {
     }
   };
 
+  const [editSaleForm, setEditSaleForm] = React.useState(null);
+
+  React.useEffect(() => {
+    if (modals.editSale && modalData) {
+      setEditSaleForm({
+        quantity: modalData.quantity,
+        sale_price_pen: modalData.sale_price_pen
+      });
+    }
+  }, [modals.editSale, modalData]);
+
+  const handleEditSaleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const original = modalData;
+      
+      // 1. Actualizar la venta
+      const { error: sErr } = await supabase.from('sales').update(editSaleForm).eq('id', original.id);
+      if (sErr) throw sErr;
+
+      // 2. Ajustar Stock
+      const prod = (products || []).find(p => p.id === original.product_id);
+      if (prod) {
+        const diff = original.quantity - editSaleForm.quantity; // Si vendí menos, devuelvo stock. Si vendí más, resto.
+        const newStock = (prod.stock || 0) + diff;
+        
+        await supabase.from('products').update({ stock: newStock }).eq('id', prod.id);
+      }
+
+      closeModal('editSale');
+      refreshData(true);
+    } catch (e) {
+      alert(`Error al editar venta: ${e.message}`);
+    }
+  };
+
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -717,6 +753,71 @@ const GlobalModals = () => {
              <button 
                type="submit" 
                className="w-full h-16 bg-indigo-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
+             >
+               Guardar Cambios
+             </button>
+          </form>
+        )}
+      </Modal>
+      <Modal 
+        isOpen={modals.editSale} 
+        onClose={() => closeModal('editSale')} 
+        title="Editar Registro de Venta"
+        icon={ShoppingCart}
+      >
+        {editSaleForm && modalData && (
+          <form onSubmit={handleEditSaleSubmit} className="space-y-6">
+             <div className="p-4 bg-emerald-50 dark:bg-emerald-500/5 rounded-2xl border border-emerald-100 dark:border-emerald-500/10">
+                <p className="text-[9px] font-black uppercase text-emerald-400 tracking-widest">Producto en transacción</p>
+                <p className="text-sm font-black uppercase mt-1">{modalData.product_name}</p>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Unidades Vendidas</label>
+                   <div className="relative group">
+                      <Hash size={16} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-emerald-600 transition-all" />
+                      <input 
+                        type="number" 
+                        required 
+                        min="1"
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-emerald-500/20 outline-none tabular-nums shadow-inner transition-all" 
+                        value={editSaleForm.quantity} 
+                        onChange={e => setEditSaleForm({...editSaleForm, quantity: parseInt(e.target.value)})} 
+                      />
+                   </div>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Precio Unitario (S/)</label>
+                   <div className="relative group">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-emerald-600 transition-colors uppercase">PEN</span>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        required 
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-emerald-500/20 outline-none tabular-nums shadow-inner transition-all" 
+                        value={editSaleForm.sale_price_pen} 
+                        onChange={e => setEditSaleForm({...editSaleForm, sale_price_pen: parseFloat(e.target.value)})} 
+                      />
+                   </div>
+                </div>
+             </div>
+
+             <div className="p-6 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-[2rem] border border-emerald-500/10 space-y-3">
+                <div className="flex justify-between items-center text-emerald-600">
+                   <p className="text-[9px] font-black uppercase tracking-widest">Resumen de Venta Corregida</p>
+                   <div className="flex items-center gap-2">
+                      <TrendingUp size={14} />
+                      <span className="text-xl font-black tabular-nums font-mono">
+                          S/ {(editSaleForm.sale_price_pen * editSaleForm.quantity).toFixed(2)}
+                      </span>
+                   </div>
+                </div>
+             </div>
+
+             <button 
+               type="submit" 
+               className="w-full h-16 bg-emerald-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-emerald-600/30 hover:scale-[1.02] active:scale-95 transition-all"
              >
                Guardar Cambios
              </button>
