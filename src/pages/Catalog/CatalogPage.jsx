@@ -76,25 +76,25 @@ const CatalogPage = () => {
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 duration-700">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
          <div>
-           <h2 className="text-3xl font-black uppercase tracking-tight">Catálogo Comercial</h2>
-           <p className="text-[11px] uppercase font-bold text-slate-400 tracking-widest mt-1">Gestión avanzada de activos y márgenes de ganancia</p>
+           <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Catálogo Comercial</h2>
+           <p className="text-[10px] md:text-[11px] uppercase font-bold text-slate-400 tracking-widest mt-1">Gestión avanzada de activos y márgenes</p>
          </div>
          <button 
            onClick={() => {
              setEditingProduct(null);
-              setProductForm({ name: '', category: categories[0]?.name || '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' });
+             setProductForm({ name: '', category: categories[0]?.name || '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' });
              setShowProductModal(true);
            }} 
-           className="h-14 px-8 bg-indigo-600 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3"
+           className="h-14 px-8 bg-indigo-600 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:scale-105 transition-all flex items-center justify-center gap-3"
          >
-           <Plus size={18}/> Nuevo Producto
+           <Plus size={18}/> <span>Nuevo Producto</span>
          </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center gap-4 shadow-sm">
-         <div className="flex-1 relative group">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col items-stretch gap-4 shadow-sm">
+         <div className="relative group">
             <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
             <input 
               className="w-full h-14 bg-slate-50 dark:bg-slate-950 px-16 text-xs font-bold rounded-2xl border border-transparent focus:border-indigo-500/30 outline-none focus:ring-4 ring-indigo-500/5 transition-all uppercase placeholder:text-slate-400" 
@@ -104,14 +104,14 @@ const CatalogPage = () => {
             />
          </div>
          
-         <div className="flex gap-4">
+         <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={()=>setShowOnlyFavorites(!showOnlyFavorites)} 
-              className={`h-14 px-6 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase transition-all border ${showOnlyFavorites ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-500/20' : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'}`}
+              className={`h-14 px-6 rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black uppercase transition-all border ${showOnlyFavorites ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-500/20' : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'}`}
             >
                <Star size={18} className={showOnlyFavorites ? 'fill-current' : ''}/> {showOnlyFavorites ? 'Favoritos' : 'Todos'}
             </button>
-            <div className="h-14 p-1.5 bg-slate-50 dark:bg-slate-950 rounded-2xl flex gap-2 overflow-x-auto no-scrollbar shadow-inner border border-transparent">
+            <div className="h-14 p-1.5 bg-slate-50 dark:bg-slate-950 rounded-2xl flex gap-2 overflow-x-auto no-scrollbar shadow-inner border border-transparent flex-1">
                {['Todas', ...categories.map(c=>c.name)].map(c => (
                   <button 
                     key={c} 
@@ -126,7 +126,7 @@ const CatalogPage = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-         <div className="overflow-x-auto">
+         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             <table className="w-full text-left min-w-[900px]">
                <thead>
                   <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">

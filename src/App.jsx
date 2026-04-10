@@ -14,14 +14,16 @@ import SalesPage from './pages/Sales/SalesPage';
 import PurchasesPage from './pages/Purchases/PurchasesPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 
+import { Menu } from 'lucide-react';
+
 const AppContent = () => {
   const { user, loading } = useInventory();
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      // Small timeout to ensure everything is rendered before removing splash
       const timer = setTimeout(() => setIsFirstLoad(false), 300);
       return () => clearTimeout(timer);
     }
@@ -34,7 +36,6 @@ const AppContent = () => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Only show splash screen on the absolute first initialization
   if (isFirstLoad && loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center animate-out fade-out duration-700">
       <div className="flex flex-col items-center gap-6">
@@ -48,11 +49,29 @@ const AppContent = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#020617] text-slate-900 dark:text-slate-100 flex font-sans transition-colors duration-300 antialiased overflow-x-hidden">
-        <Sidebar darkMode={darkMode} setDarkMode={setDarkMode} />
+      <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#020617] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors duration-300 antialiased overflow-x-hidden">
+        <Sidebar 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode} 
+          isMobileOpen={isMobileOpen} 
+          setIsMobileOpen={setIsMobileOpen}
+        />
         
-        <main className="ml-64 flex-1 flex flex-col items-center">
-          <div className="w-full max-w-7xl p-8 md:p-12">
+        {/* Mobile Header */}
+        <div className="md:hidden sticky top-0 z-[500] w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-900 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+               <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                  <Menu size={18} onClick={() => setIsMobileOpen(true)} />
+               </div>
+               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Control Maestro</span>
+            </div>
+            <div className="flex items-center gap-3">
+               {/* Small status or user info could go here */}
+            </div>
+        </div>
+
+        <main className="flex-1 flex flex-col items-center md:ml-64 transition-all duration-300">
+          <div className="w-full max-w-7xl p-4 md:p-12">
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/catalogo" element={<CatalogPage />} />
