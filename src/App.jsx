@@ -17,6 +17,15 @@ import SettingsPage from './pages/Settings/SettingsPage';
 const AppContent = () => {
   const { user, loading } = useInventory();
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  useEffect(() => {
+    if (!loading) {
+      // Small timeout to ensure everything is rendered before removing splash
+      const timer = setTimeout(() => setIsFirstLoad(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -25,8 +34,9 @@ const AppContent = () => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+  // Only show splash screen on the absolute first initialization
+  if (isFirstLoad && loading) return (
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center animate-out fade-out duration-700">
       <div className="flex flex-col items-center gap-6">
         <div className="w-16 h-16 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin"></div>
         <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 animate-pulse">Iniciando Protocolos...</p>
