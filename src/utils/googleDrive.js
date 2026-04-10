@@ -4,7 +4,7 @@
  * y suba archivos directamente a su Drive.
  */
 
-const CLIENT_ID = 'ESCRIBE_AQUI_TU_CLIENT_ID'; // El usuario deberá reemplazar esto
+const CLIENT_ID = '186919203964-ejj9uk85o05er6mues31fbskfg9fdtmv.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let tokenClient = null;
