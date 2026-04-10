@@ -77,7 +77,8 @@ const DashboardPage = () => {
     return acc + ((p.stock||0) * (p.cost_clp||0) * rate);
   }, 0);
 
-  const lStock = products.filter(p => (p.stock||0) < 5).length;
+  const productsWithPurchases = new Set(purchases.map(pu => pu.product_id));
+  const lStock = products.filter(p => productsWithPurchases.has(p.id) && (p.stock || 0) < 5).length;
 
   const handleExportExcel = () => {
     try {
