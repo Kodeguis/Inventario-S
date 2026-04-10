@@ -231,6 +231,7 @@ const CatalogPage = () => {
                     value={productForm.category} 
                     onChange={val => setProductForm({...productForm, category: val})}
                     options={categories.map(c => ({ label: c.name, value: c.name }))}
+                    className="h-14"
                   />
               </div>
               <div className="space-y-2">
@@ -272,7 +273,7 @@ const CatalogPage = () => {
                      value={productForm.currency} 
                      onChange={val => setProductForm({...productForm, currency: val})}
                      options={['CLP', 'PEN']}
-                     className="w-24"
+                     className="w-24 h-11"
                    />
                  </div>
                  

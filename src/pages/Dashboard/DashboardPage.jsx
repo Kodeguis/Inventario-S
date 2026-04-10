@@ -120,14 +120,14 @@ const DashboardPage = () => {
                  setFilterMonth(monthId);
                }}
                options={MESES.map(m => m.label)}
-               className="w-48"
+               className="w-48 h-10"
              />
              <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1" />
              <CustomSelect 
                value={filterYear} 
                onChange={val => setFilterYear(val)}
                options={['2026', '2027', '2028']}
-               className="w-28"
+               className="w-28 h-10"
              />
           </div>
       </div>

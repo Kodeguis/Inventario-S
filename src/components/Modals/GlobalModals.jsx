@@ -7,7 +7,7 @@ import CustomSelect from '../Common/CustomSelect';
 import { supabase } from '../../lib/supabaseClient';
 
 const GlobalModals = () => {
-  const { modals, closeModal, modalData } = useModals();
+  const { modals, openModal, closeModal, modalData } = useModals();
   const { refreshData, products, categories, settings } = useInventory();
   
   const [purchaseForm, setPurchaseForm] = React.useState({
@@ -23,6 +23,9 @@ const GlobalModals = () => {
   const [searchCategory, setSearchCategory] = React.useState('Todas');
   const [isSelectOpen, setIsSelectOpen] = React.useState(false);
   const [isAddingNew, setIsAddingNew] = React.useState(false);
+  const [productForm, setProductForm] = React.useState({ 
+    name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' 
+  });
 
   const filteredProducts = products.filter(p => {
     const matchesText = (p.name || '').toLowerCase().includes(searchProduct.toLowerCase()) || 
@@ -107,21 +110,114 @@ const GlobalModals = () => {
 
   const selectedPurchaseProduct = products.find(p => p.id === purchaseForm.product_id);
 
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase.from('products').insert([productForm]).select();
+      if (error) throw error;
+      
+      refreshData(true);
+      closeModal('product');
+      // Limpiar formulario
+      setProductForm({ name: '', category: categories[0]?.name || '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' });
+      
+      // Si veníamos de una compra, sería genial volver a abrirla con el producto seleccionado
+      // Pero por ahora solo cerramos y notificamos éxito
+    } catch (e) {
+      alert(`Error al registrar producto: ${e.message}`);
+    }
+  };
+
   return (
     <>
       <Modal 
         isOpen={modals.product} 
         onClose={() => closeModal('product')} 
-        title="Gestión de Producto"
-        icon={BookOpen}
+        title="Registrar Nuevo Producto"
+        icon={Plus}
       >
-        <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
-           <Package size={48} className="text-slate-200" />
-           <div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Formulario Maestro de Productos</p>
-             <p className="text-[9px] font-bold text-slate-300 uppercase mt-1">El registro se gestiona directamente desde la pestaña de Catálogo</p>
+        <form onSubmit={handleProductSubmit} className="space-y-6">
+           <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nombre Comercial</label>
+              <input 
+                required 
+                className="w-full h-14 bg-slate-50 dark:bg-slate-900 px-8 text-sm font-black rounded-2xl border-2 border-transparent focus:border-indigo-500/20 outline-none uppercase shadow-inner transition-all" 
+                placeholder="Nombre del producto..." 
+                value={productForm.name} 
+                onChange={e=>setProductForm({...productForm, name: e.target.value})} 
+              />
            </div>
-        </div>
+           
+           <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Categoría</label>
+                  <CustomSelect 
+                    value={productForm.category} 
+                    onChange={val => setProductForm({...productForm, category: val})}
+                    options={categories.map(c => c.name)}
+                    className="h-14"
+                  />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Marca</label>
+                 <input 
+                   className="w-full h-14 bg-slate-50 dark:bg-slate-900 px-8 text-[11px] font-black rounded-2xl border-2 border-transparent outline-none uppercase shadow-inner" 
+                   placeholder="Marca" 
+                   value={productForm.brand} 
+                   onChange={e=>setProductForm({...productForm, brand: e.target.value})} 
+                 />
+              </div>
+           </div>
+
+           <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 space-y-4">
+              <div className="flex justify-between items-center">
+                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Costo Unitario</label>
+                  <CustomSelect 
+                    value={productForm.currency} 
+                    onChange={val => setProductForm({...productForm, currency: val})}
+                    options={['CLP', 'PEN']}
+                    className="w-24 h-11"
+                  />
+              </div>
+
+              <div className="relative group">
+                 <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-indigo-500 transition-colors uppercase">{productForm.currency}</span>
+                 <input 
+                   type="number" 
+                   step="0.01"
+                   required 
+                   className="w-full h-16 bg-white dark:bg-slate-950 px-20 text-2xl font-black rounded-2xl border-2 border-transparent focus:border-indigo-500/20 outline-none transition-all text-indigo-600 tabular-nums shadow-sm" 
+                   value={productForm.currency === 'CLP' ? (productForm.cost_clp || '') : (productForm.cost_pen || '')} 
+                   onChange={e => setProductForm({
+                     ...productForm, 
+                     [productForm.currency === 'CLP' ? 'cost_clp' : 'cost_pen']: parseFloat(e.target.value)
+                   })} 
+                 />
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Precio de Venta Sugerido (S/)</label>
+              <div className="relative group">
+                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-emerald-500 transition-colors uppercase font-mono">PEN</span>
+                 <input 
+                   type="number" 
+                   step="0.01" 
+                   required 
+                   className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-emerald-500/20 outline-none tabular-nums shadow-inner transition-all" 
+                   value={productForm.suggested_price || ''} 
+                   onChange={e => setProductForm({...productForm, suggested_price: parseFloat(e.target.value)})} 
+                 />
+              </div>
+           </div>
+
+           <button 
+             type="submit" 
+             className="w-full h-16 bg-indigo-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
+           >
+             Registrar Producto
+           </button>
+        </form>
       </Modal>
 
       <Modal 
@@ -395,12 +491,12 @@ const GlobalModals = () => {
            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 space-y-4">
               <div className="flex justify-between items-center">
                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Costo Unitario de Compra</label>
-                 <CustomSelect 
-                   value={purchaseForm.currency} 
-                   onChange={val => setPurchaseForm({...purchaseForm, currency: val})}
-                   options={['CLP', 'PEN']}
-                   className="w-24"
-                 />
+                  <CustomSelect 
+                    value={purchaseForm.currency} 
+                    onChange={val => setPurchaseForm({...purchaseForm, currency: val})}
+                    options={['CLP', 'PEN']}
+                    className="w-24 h-11"
+                  />
               </div>
 
               <div className="relative group">
@@ -436,6 +532,73 @@ const GlobalModals = () => {
              Confirmar Abastecimiento
            </button>
         </form>
+      </Modal>
+      <Modal 
+        isOpen={modals.saleDetail} 
+        onClose={() => closeModal('saleDetail')} 
+        title="Detalle de Transacción"
+        icon={ShoppingCart}
+      >
+        {modalData && (
+          <div className="space-y-8 py-4">
+             <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center text-emerald-600">
+                   <Check size={40} />
+                </div>
+                <div>
+                   <h3 className="text-xl font-black uppercase tracking-tight">{modalData.product_name}</h3>
+                   <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-500/5 px-3 py-1 rounded-lg inline-block mt-2">
+                     {modalData.product_category}
+                   </p>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4">
+                <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-1">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Unidades</p>
+                   <p className="text-xl font-black tabular-nums">{modalData.quantity} U.</p>
+                </div>
+                <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-1">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ticket Promedio</p>
+                   <p className="text-xl font-black tabular-nums">S/ {modalData.sale_price_pen.toFixed(2)}</p>
+                </div>
+             </div>
+
+             <div className="p-8 bg-emerald-600 text-white rounded-[2.5rem] shadow-2xl shadow-emerald-600/30 space-y-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                   <TrendingUp size={120} />
+                </div>
+                <div className="relative z-10">
+                   <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">Rendimiento Operativo</p>
+                   <div className="flex items-baseline gap-2 mt-4">
+                      <span className="text-4xl font-black tabular-nums">S/ {modalData.profit_pen.toFixed(2)}</span>
+                      <span className="text-xs font-bold opacity-60 uppercase italic">Utilidad Neta</span>
+                   </div>
+                </div>
+                <div className="h-px bg-white/10 relative z-10"></div>
+                <div className="flex justify-between items-center relative z-10">
+                   <div>
+                      <p className="text-[8px] font-black uppercase tracking-widest opacity-50">Ingreso Total</p>
+                      <p className="text-lg font-black tabular-nums">S/ {(modalData.sale_price_pen * modalData.quantity).toFixed(2)}</p>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[8px] font-black uppercase tracking-widest opacity-50">Costo Estimado</p>
+                      <p className="text-lg font-black tabular-nums">S/ {((modalData.sale_price_pen * modalData.quantity) - modalData.profit_pen).toFixed(2)}</p>
+                   </div>
+                </div>
+             </div>
+
+             <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                <CalendarIcon size={16} className="text-slate-400" />
+                <div className="flex-1">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Fecha y Hora de Transacción</p>
+                   <p className="text-[10px] font-bold uppercase tabular-nums">
+                      {new Date(modalData.created_at || modalData.date).toLocaleString()}
+                   </p>
+                </div>
+             </div>
+          </div>
+        )}
       </Modal>
     </>
   );

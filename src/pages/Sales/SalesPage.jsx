@@ -10,9 +10,10 @@ import {
   Plus
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
+import { exportToExcel } from '../../utils/excelExport';
 
 const SalesPage = () => {
-  const { sales, loading } = useInventory();
+  const { sales, products, categories, purchases, loading } = useInventory();
   const { openModal } = useModals();
   const [saleSearch, setSaleSearch] = useState('');
 
@@ -20,6 +21,18 @@ const SalesPage = () => {
     s.product_name.toLowerCase().includes(saleSearch.toLowerCase()) ||
     s.product_category.toLowerCase().includes(saleSearch.toLowerCase())
   );
+
+  const handleExport = () => {
+    try {
+      exportToExcel(sales, products, categories, purchases);
+    } catch (error) {
+       alert("Error al exportar: " + error.message);
+    }
+  };
+
+  const handleRowClick = (sale) => {
+    openModal('saleDetail', sale);
+  };
 
 
 
@@ -48,7 +61,10 @@ const SalesPage = () => {
               onChange={e=>setSaleSearch(e.target.value)} 
             />
          </div>
-         <button className="h-14 px-8 bg-slate-900 dark:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl shadow-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all">
+         <button 
+           onClick={handleExport}
+           className="h-14 px-8 bg-slate-900 dark:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl shadow-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all"
+         >
             <FileSpreadsheet size={18}/> Exportar Ventas
          </button>
       </div>
@@ -67,7 +83,11 @@ const SalesPage = () => {
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {filteredSales.slice().reverse().map(s => (
-                    <tr key={s.id} className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300">
+                    <tr 
+                      key={s.id} 
+                      onClick={() => handleRowClick(s)}
+                      className="group hover:bg-slate-50 dark:hover:bg-indigo-600/5 transition-all duration-300 cursor-pointer"
+                    >
                        <td className="px-10 py-7">
                           <div className="flex items-center gap-4">
                              <Calendar size={16} className="text-slate-300 dark:text-slate-700" />

@@ -25,7 +25,7 @@ const CustomSelect = ({ value, onChange, options, className = "" }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full h-10 px-4 py-2 text-[11px] font-black uppercase bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:outline-none focus:ring-4 ring-indigo-500/5 transition-all text-slate-700 dark:text-slate-200"
+        className="flex items-center justify-between w-full h-full px-6 py-4 text-[11px] font-black uppercase bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-indigo-500/20 rounded-2xl shadow-inner transition-all text-slate-700 dark:text-slate-200"
       >
         <span>{value}</span>
         <ChevronDown 
