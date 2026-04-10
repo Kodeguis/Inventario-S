@@ -169,19 +169,29 @@ const GlobalModals = () => {
     e.preventDefault();
     try {
       const original = modalData;
+      const prod = (products || []).find(p => p.id === original.product_id);
+      const rate = parseFloat(settings.exchange_rate) || 0.0039;
+
+      if (!prod) throw new Error("Producto no encontrado");
+
+      // Recalcular métricas de la venta
+      const total_sale_pen = editSaleForm.quantity * editSaleForm.sale_price_pen;
+      const cost_pen_at_time = prod.currency === 'PEN' ? prod.cost_pen : (prod.cost_clp * rate);
+      const profit_pen = total_sale_pen - (editSaleForm.quantity * cost_pen_at_time);
       
       // 1. Actualizar la venta
-      const { error: sErr } = await supabase.from('sales').update(editSaleForm).eq('id', original.id);
+      const { error: sErr } = await supabase.from('sales').update({
+        ...editSaleForm,
+        total_sale_pen,
+        profit_pen
+      }).eq('id', original.id);
       if (sErr) throw sErr;
 
       // 2. Ajustar Stock
-      const prod = (products || []).find(p => p.id === original.product_id);
-      if (prod) {
-        const diff = original.quantity - editSaleForm.quantity; // Si vendí menos, devuelvo stock. Si vendí más, resto.
-        const newStock = (prod.stock || 0) + diff;
-        
-        await supabase.from('products').update({ stock: newStock }).eq('id', prod.id);
-      }
+      const diff = original.quantity - editSaleForm.quantity; // Si vendí menos, devuelvo stock. Si vendí más, resto.
+      const newStock = (prod.stock || 0) + diff;
+      
+      await supabase.from('products').update({ stock: newStock }).eq('id', prod.id);
 
       closeModal('editSale');
       refreshData(true);
