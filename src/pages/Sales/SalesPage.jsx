@@ -9,7 +9,10 @@ import {
   TrendingUp,
   Plus,
   Edit2,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
 import { exportToExcel } from '../../utils/excelExport';
@@ -19,11 +22,31 @@ const SalesPage = () => {
   const { sales, products, categories, purchases, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [saleSearch, setSaleSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
 
-  const filteredSales = sales.filter(s => 
-    s.product_name.toLowerCase().includes(saleSearch.toLowerCase()) ||
-    s.product_category.toLowerCase().includes(saleSearch.toLowerCase())
+  const formatDate = (dateStr) => {
+    try {
+      if (!dateStr) return 'N/A';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const date = d.toISOString().split('T')[0];
+      const time = d.toTimeString().split(' ')[0].substring(0, 5);
+      return `${date} · ${time}`;
+    } catch (e) {
+      return dateStr || 'N/A';
+    }
+  };
+
+  const filteredSales = (sales || []).filter(s => 
+    (s.product_name || '').toLowerCase().includes(saleSearch.toLowerCase()) ||
+    (s.product_category || '').toLowerCase().includes(saleSearch.toLowerCase())
   );
+
+  const sortedSales = [...filteredSales].sort((a, b) => {
+    const dateA = new Date(a.created_at || a.date || 0);
+    const dateB = new Date(b.created_at || b.date || 0);
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
 
   const handleExport = () => {
     try {
@@ -100,7 +123,15 @@ const SalesPage = () => {
             <table className="w-full text-left min-w-[800px]">
                <thead>
                   <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
-                     <th className="px-10 py-6">Timeline</th>
+                     <th 
+                        className="px-10 py-6 cursor-pointer hover:text-indigo-600 transition-colors group"
+                        onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                     >
+                        <div className="flex items-center gap-2">
+                           Timeline
+                           {sortOrder === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>}
+                        </div>
+                     </th>
                      <th className="px-10 py-6">Producto Operado</th>
                      <th className="px-10 py-6 text-center">Volumen</th>
                      <th className="px-10 py-6 text-right">Ticket Total</th>
@@ -109,7 +140,7 @@ const SalesPage = () => {
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {filteredSales.slice().reverse().map(s => (
+                  {sortedSales.map(s => (
                     <tr 
                       key={s.id} 
                       onClick={() => handleRowClick(s)}
@@ -118,7 +149,9 @@ const SalesPage = () => {
                        <td className="px-10 py-7">
                           <div className="flex items-center gap-4">
                              <Calendar size={16} className="text-slate-300 dark:text-slate-700" />
-                             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums uppercase">{s.date}</span>
+                             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums uppercase whitespace-nowrap">
+                                {formatDate(s.created_at || s.date)}
+                             </span>
                           </div>
                        </td>
                        <td className="px-10 py-7">

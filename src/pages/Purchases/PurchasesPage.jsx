@@ -8,7 +8,9 @@ import {
   ArrowDownLeft,
   Plus,
   Edit2,
-  Trash2
+  Trash2,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
 import { supabase } from '../../lib/supabaseClient';
@@ -17,11 +19,31 @@ const PurchasesPage = () => {
   const { purchases, products, settings, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [purchaseSearch, setPurchaseSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
 
-  const filteredPurchases = purchases.filter(p => 
-    p.product_name.toLowerCase().includes(purchaseSearch.toLowerCase()) ||
-    p.product_category?.toLowerCase().includes(purchaseSearch.toLowerCase())
+  const formatDate = (dateStr) => {
+    try {
+      if (!dateStr) return 'N/A';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const date = d.toISOString().split('T')[0];
+      const time = d.toTimeString().split(' ')[0].substring(0, 5);
+      return `${date} · ${time}`;
+    } catch (e) {
+      return dateStr || 'N/A';
+    }
+  };
+
+  const filteredPurchases = (purchases || []).filter(p => 
+    (p.product_name || '').toLowerCase().includes(purchaseSearch.toLowerCase()) ||
+    (p.product_category || '').toLowerCase().includes(purchaseSearch.toLowerCase())
   );
+
+  const sortedPurchases = [...filteredPurchases].sort((a, b) => {
+    const dateA = new Date(a.created_at || a.date || 0);
+    const dateB = new Date(b.created_at || b.date || 0);
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
 
   const handleDelete = async (e, purchase) => {
     e.stopPropagation();
@@ -79,7 +101,15 @@ const PurchasesPage = () => {
             <table className="w-full text-left min-w-[800px]">
                <thead>
                   <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
-                     <th className="px-10 py-6">Timeline</th>
+                     <th 
+                        className="px-10 py-6 cursor-pointer hover:text-indigo-600 transition-colors group"
+                        onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                     >
+                        <div className="flex items-center gap-2">
+                           Timeline
+                           {sortOrder === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>}
+                        </div>
+                     </th>
                      <th className="px-10 py-6">Ítem Adquirido</th>
                      <th className="px-10 py-6 text-center">Cantidad</th>
                      <th className="px-10 py-6 text-right">Inversión (PEN)</th>
@@ -87,7 +117,7 @@ const PurchasesPage = () => {
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {filteredPurchases.slice().reverse().map(p => {
+                  {sortedPurchases.map(p => {
                     const rate = parseFloat(settings.exchange_rate) || 0.0039;
                     const totalCostPEN = p.currency === 'PEN' ? (p.cost_pen * p.quantity) : (p.cost_clp * p.quantity * rate);
 
@@ -99,7 +129,9 @@ const PurchasesPage = () => {
                          <td className="px-10 py-7">
                             <div className="flex items-center gap-4">
                                <Calendar size={16} className="text-slate-300" />
-                               <span className="text-[11px] font-bold text-slate-500 tabular-nums uppercase">{p.date}</span>
+                               <span className="text-[11px] font-bold text-slate-500 tabular-nums uppercase whitespace-nowrap">
+                                  {formatDate(p.created_at || p.date)}
+                               </span>
                             </div>
                          </td>
                          <td className="px-10 py-7">
