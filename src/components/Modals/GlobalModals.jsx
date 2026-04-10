@@ -20,12 +20,16 @@ const GlobalModals = () => {
   });
 
   const [searchProduct, setSearchProduct] = React.useState('');
+  const [searchCategory, setSearchCategory] = React.useState('Todas');
   const [isSelectOpen, setIsSelectOpen] = React.useState(false);
+  const [isAddingNew, setIsAddingNew] = React.useState(false);
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchProduct.toLowerCase()) || 
-    p.brand.toLowerCase().includes(searchProduct.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesText = p.name.toLowerCase().includes(searchProduct.toLowerCase()) || 
+                       p.brand.toLowerCase().includes(searchProduct.toLowerCase());
+    const matchesCat = searchCategory === 'Todas' || p.category === searchCategory;
+    return matchesText && matchesCat;
+  });
 
   const handlePurchaseSubmit = async (e) => {
     e.preventDefault();
