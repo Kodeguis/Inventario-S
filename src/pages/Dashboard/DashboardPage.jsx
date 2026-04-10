@@ -25,6 +25,10 @@ const DashboardPage = () => {
   const [filterMonth, setFilterMonth] = React.useState('all');
   const [filterYear, setFilterYear] = React.useState('2026');
 
+  React.useEffect(() => {
+    initGoogleContext();
+  }, []);
+
   const MESES = [
     { id: 'all', label: 'Todos los meses' }, { id: '0', label: 'Enero' }, { id: '1', label: 'Febrero' }, { id: '2', label: 'Marzo' },
     { id: '3', label: 'Abril' }, { id: '4', label: 'Mayo' }, { id: '5', label: 'Junio' }, { id: '6', label: 'Julio' },
@@ -84,11 +88,16 @@ const DashboardPage = () => {
 
   const handleBackupDrive = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/backup-drive', { method: 'POST' });
-      if (res.ok) alert('Respaldo en Google Drive iniciado con éxito');
-      else alert('Error en el respaldo');
+      const excelBlob = exportToExcel(sales, products, categories, false);
+      const fileName = `Respaldo_Inventario_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+
+      await saveToGoogleDrive(excelBlob, fileName);
+      
+      alert('¡Sincronización con Google Drive exitosa!');
     } catch (error) {
-      alert('Error de conexión con el servidor');
+      if (error.error === 'popup_closed_by_user') return;
+      alert('Error al conectar con Google Drive. Verifica tu conexión o el Client ID.');
+      console.error(error);
     }
   };
 

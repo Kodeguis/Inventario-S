@@ -1,12 +1,12 @@
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-export const exportToExcel = (sales = [], products = [], categories = []) => {
+export const exportToExcel = (sales = [], products = [], categories = [], autoSave = true) => {
   const workbook = XLSX.utils.book_new();
 
   // 1. Sales Sheet
   const salesData = sales.map(s => ({
-    'ID': s.id.slice(0,8),
+    'ID': s.id?.slice(0,8),
     'Fecha': new Date(s.date).toLocaleString(),
     'Producto': s.products?.name || 'N/A',
     'Categoría': s.products?.category || 'Otros',
@@ -47,8 +47,13 @@ export const exportToExcel = (sales = [], products = [], categories = []) => {
   const invSheet = XLSX.utils.json_to_sheet(invData);
   XLSX.utils.book_append_sheet(workbook, invSheet, 'Inventario Actual');
 
-  // Generate and save
+  // Generate
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
   const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-  saveAs(data, `Reporte_Inventario_${new Date().toLocaleDateString()}.xlsx`);
+  
+  if (autoSave) {
+    saveAs(data, `Reporte_Inventario_${new Date().toLocaleDateString()}.xlsx`);
+  }
+
+  return data;
 };
