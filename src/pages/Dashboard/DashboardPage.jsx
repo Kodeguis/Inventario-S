@@ -81,7 +81,7 @@ const DashboardPage = () => {
 
   const handleExportExcel = () => {
     try {
-      exportToExcel(sales, products, categories);
+      exportToExcel(sales, products, categories, purchases);
     } catch (error) {
       alert('Error al generar Excel localmente');
     }
@@ -89,7 +89,7 @@ const DashboardPage = () => {
 
   const handleBackupDrive = async () => {
     try {
-      const excelBlob = exportToExcel(sales, products, categories, false);
+      const excelBlob = exportToExcel(sales, products, categories, purchases, false);
       const fileName = `Respaldo_Inventario_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
 
       await saveToGoogleDrive(excelBlob, fileName);
