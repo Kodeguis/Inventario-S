@@ -39,7 +39,9 @@ export const InventoryProvider = ({ children }) => {
   }, []);
 
   const fetchData = async (silent = false) => {
-    if (!silent) setLoading(true);
+    // Solo mostramos el cargador si no tenemos ningún dato todavía
+    const isFirstLoad = products.length === 0 && sales.length === 0;
+    if (!silent && isFirstLoad) setLoading(true);
     try {
       const [
         { data: p },

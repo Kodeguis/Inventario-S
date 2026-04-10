@@ -36,7 +36,7 @@ const DashboardPage = () => {
     { id: '7', label: 'Agosto' }, { id: '8', label: 'Septiembre' }, { id: '9', label: 'Octubre' }, { id: '10', label: 'Noviembre' }, { id: '11', label: 'Diciembre' }
   ];
 
-  if (loading) return <div className="h-[60vh] flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse">Cargando métricas maestras...</div>;
+  if (loading && products.length === 0) return <div className="h-[60vh] flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse transition-opacity">Cargando métricas maestras...</div>;
 
   const parseDate = (dStr) => {
     if (!dStr) return new Date();
