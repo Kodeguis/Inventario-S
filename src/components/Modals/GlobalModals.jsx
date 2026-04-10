@@ -2,7 +2,7 @@ import React from 'react';
 import { useModals } from '../../context/ModalContext';
 import { useInventory } from '../../context/InventoryContext';
 import Modal from '../Common/Modal';
-import { ShoppingCart, TrendingUp, BookOpen, Package, User, Hash, DollarSign, Calendar as CalendarIcon, Search, Check, ChevronDown } from 'lucide-react';
+import { ShoppingCart, TrendingUp, BookOpen, Package, User, Hash, DollarSign, Calendar as CalendarIcon, Search, Check, ChevronDown, Plus } from 'lucide-react';
 import CustomSelect from '../Common/CustomSelect';
 import { supabase } from '../../lib/supabaseClient';
 
