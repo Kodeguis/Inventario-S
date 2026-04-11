@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { LogIn, ShieldCheck, User, Lock, Loader2 } from 'lucide-react';
+import { LogIn, User, Lock, Loader2 } from 'lucide-react';
+import PinoIcon from '../components/Common/PinoIcon';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -35,11 +36,11 @@ const LoginPage = () => {
       <div className="w-full max-w-[440px] relative z-10">
         <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-10 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] space-y-10">
           <div className="space-y-4 text-center">
-            <div className="inline-flex p-4 rounded-3xl bg-indigo-600 shadow-xl shadow-indigo-600/20 mb-4 animate-in zoom-in duration-500">
-               <ShieldCheck size={32} className="text-white"/>
+            <div className="flex justify-center animate-in zoom-in duration-500 text-indigo-500 hover:scale-105 transition-transform">
+               <PinoIcon size={100} />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight uppercase">Control Maestro</h1>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">Acceso Restringido • Sergio v.1.0</p>
+            <h1 className="text-3xl font-black text-white tracking-tight uppercase">Pino</h1>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">Acceso Restringido • v.1.0</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">

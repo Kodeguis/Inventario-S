@@ -7,13 +7,14 @@ import {
   ShoppingCart, 
   TrendingUp, 
   Settings, 
-  Star,
+  Trees,
   Sun,
   Moon,
   LogOut,
   X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import PinoIcon from '../Common/PinoIcon';
 
 const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
   const handleLogout = async () => {
@@ -50,12 +51,11 @@ const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
       <aside className={sidebarClasses}>
         <div className="p-8 pb-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
-               <Star size={22} fill="currentColor"/>
+             <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-500 hover:scale-110 transition-transform duration-300">
+               <PinoIcon size={48} />
              </div>
              <div>
-               <p className="text-[11px] font-black uppercase tracking-widest text-slate-800 dark:text-white leading-tight">Inventario</p>
-               <p className="text-[14px] font-black uppercase tracking-tighter text-indigo-600 leading-none">Sergio</p>
+               <p className="text-[22px] font-black uppercase tracking-tighter text-indigo-600 leading-none">Pino</p>
              </div>
           </div>
           <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-slate-400 hover:text-indigo-600 transition-colors">
