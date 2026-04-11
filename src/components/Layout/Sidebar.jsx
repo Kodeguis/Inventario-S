@@ -55,7 +55,10 @@ const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
                <PinoIcon size={48} />
              </div>
              <div>
-               <p className="text-[22px] font-black uppercase tracking-tighter text-indigo-600 leading-none">Pino</p>
+               <p className="flex flex-col items-start leading-none translate-y-1">
+                 <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-[0.4em]">Inventario</span>
+                 <span className="text-[26px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-500">Pino</span>
+               </p>
              </div>
           </div>
           <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-slate-400 hover:text-indigo-600 transition-colors">

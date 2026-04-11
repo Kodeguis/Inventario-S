@@ -15,6 +15,16 @@ const PinoIcon = ({ size = 24, className = "" }) => {
         d="M50 5L30 30H40L20 55H33L10 85H90L67 55H80L60 30H70L50 5Z" 
         fill="currentColor"
       />
+
+      {/* Pine Tree Trunk */}
+      <rect 
+        x="44" 
+        y="85" 
+        width="12" 
+        height="10" 
+        rx="1" 
+        fill="currentColor"
+      />
       
       {/* Royal Crown Integrated into the Central Tier */}
       <g transform="translate(50, 56) scale(1.1)">

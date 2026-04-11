@@ -39,7 +39,10 @@ const LoginPage = () => {
             <div className="flex justify-center animate-in zoom-in duration-500 text-indigo-500 hover:scale-105 transition-transform">
                <PinoIcon size={100} />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight uppercase">Pino</h1>
+            <div className="flex flex-col items-center justify-center space-y-1">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Inventario</span>
+              <h1 className="text-5xl font-black text-indigo-500 tracking-tighter uppercase">Pino</h1>
+            </div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">Acceso Restringido • v.1.0</p>
           </div>
 
