@@ -6,7 +6,8 @@ import {
   Plus, 
   Edit2, 
   Trash2,
-  AlertCircle
+  AlertCircle,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -21,6 +22,17 @@ const InventoryPage = () => {
     const matchesCategory = inventoryCategory === 'Todas' || p.category === inventoryCategory;
     return (p.stock > 0) && matchesSearch && matchesCategory;
   });
+
+  const stats = filteredInventory.reduce((acc, p) => {
+    const rate = parseFloat(settings.exchange_rate) || 0.0039;
+    const costPEN = p.currency === 'PEN' ? (p.cost_pen || 0) : ((p.cost_clp || 0) * rate);
+    const profitPerUnit = (p.suggested_price || 0) - costPEN;
+    
+    acc.totalInvestment += costPEN * p.stock;
+    acc.totalProjectedProfit += profitPerUnit * p.stock;
+    acc.totalUnits += p.stock;
+    return acc;
+  }, { totalInvestment: 0, totalProjectedProfit: 0, totalUnits: 0 });
 
   const resetProductStock = async (id) => {
     if (confirm('¿Retirar este producto del inventario activo? El stock físico se reseteará a 0, pero el producto permanecerá en el catálogo para futuras compras.')) {
@@ -47,7 +59,7 @@ const InventoryPage = () => {
 
       <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col items-stretch gap-4 shadow-sm">
          <div className="relative group">
-            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
+            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all font-mono" />
             <input 
               className="w-full h-14 bg-slate-50 dark:bg-slate-950 px-16 text-xs font-bold rounded-2xl border border-transparent focus:border-indigo-500/30 outline-none focus:ring-4 ring-indigo-500/5 transition-all uppercase placeholder:text-slate-400" 
               placeholder="Filtro rápido de inventario..." 
@@ -66,6 +78,28 @@ const InventoryPage = () => {
                  {c.toUpperCase()}
                </button>
             ))}
+         </div>
+      </div>
+
+      {/* Banner de Inteligencia de Negocio */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-indigo-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-600/20 relative overflow-hidden group">
+            <TrendingUp size={80} className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Utilidad Latente Proyectada</p>
+            <div className="flex items-baseline gap-2 mt-4">
+               <span className="text-3xl font-black tabular-nums">S/ {stats.totalProjectedProfit.toLocaleString()}</span>
+               <span className="text-[10px] font-bold opacity-60 uppercase">Ganancia Esperada</span>
+            </div>
+         </div>
+
+         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-8 shadow-sm flex flex-col justify-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Capital Inmovilizado</p>
+            <p className="text-2xl font-black mt-3 dark:text-white tabular-nums">S/ {stats.totalInvestment.toLocaleString()}</p>
+         </div>
+
+         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-8 shadow-sm flex flex-col justify-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Volumen en Almacén</p>
+            <p className="text-2xl font-black mt-3 dark:text-white tabular-nums">{stats.totalUnits} <span className="text-xs font-bold text-slate-400">UNIDADES</span></p>
          </div>
       </div>
 

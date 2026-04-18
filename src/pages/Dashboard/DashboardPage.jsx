@@ -37,8 +37,6 @@ const DashboardPage = () => {
     { id: '7', label: 'Agosto' }, { id: '8', label: 'Septiembre' }, { id: '9', label: 'Octubre' }, { id: '10', label: 'Noviembre' }, { id: '11', label: 'Diciembre' }
   ];
 
-
-
   const parseDate = (dStr) => {
     if (!dStr) return new Date();
     if (dStr.includes('-')) {
@@ -60,33 +58,43 @@ const DashboardPage = () => {
     return matchesYear && date.getMonth().toString() === filterMonth;
   };
 
-  const dashboardSales = sales.filter(s => 
+  const dashboardSales = (sales || []).filter(s => 
     isPeriodMatch(s.date) && 
     (filterCategory === 'Todas' || s.product_category === filterCategory)
   );
   
-  const dashboardPurchases = purchases.filter(p => 
+  const dashboardPurchases = (purchases || []).filter(p => 
     isPeriodMatch(p.date) && 
     (filterCategory === 'Todas' || p.product_category === filterCategory)
   );
 
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = (products || []).filter(p => 
     filterCategory === 'Todas' || p.category === filterCategory
   );
 
   const tRev = dashboardSales.reduce((acc, s) => acc + (s.sale_price_pen * s.quantity || 0), 0);
   const tProf = dashboardSales.reduce((acc, s) => acc + (s.profit_pen || 0), 0);
   
-  const tInvPeriod = dashboardPurchases.reduce((acc, p) => {
-    const rate = parseFloat(settings.exchange_rate) || 0.0039;
+  const rate = parseFloat(settings.exchange_rate) || 0.0039;
+
+  const tInvPeriodPEN = dashboardPurchases.reduce((acc, p) => {
     if (p.currency === 'PEN') return acc + ((p.quantity||0) * (p.cost_pen||0));
     return acc + ((p.quantity||0) * (p.cost_clp||0) * rate);
   }, 0);
 
-  const tInvGlobal = filteredProducts.reduce((acc, p) => {
-    const rate = parseFloat(settings.exchange_rate) || 0.0039;
+  const tInvPeriodCLP = dashboardPurchases.reduce((acc, p) => {
+    if (p.currency === 'CLP') return acc + ((p.quantity||0) * (p.cost_clp||0));
+    return acc;
+  }, 0);
+
+  const tInvGlobalPEN = filteredProducts.reduce((acc, p) => {
     if (p.currency === 'PEN') return acc + ((p.stock||0) * (p.cost_pen||0));
     return acc + ((p.stock||0) * (p.cost_clp||0) * rate);
+  }, 0);
+
+  const tInvGlobalCLP = filteredProducts.reduce((acc, p) => {
+    if (p.currency === 'CLP') return acc + ((p.stock||0) * (p.cost_clp||0));
+    return acc;
   }, 0);
 
   const productsWithPurchases = new Set(purchases.map(pu => pu.product_id));
@@ -150,7 +158,7 @@ const DashboardPage = () => {
            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Categoría</span>
          </div>
          <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-            {['Todas', ...categories.map(c => c.name)].map(c => (
+            {['Todas', ...(categories || []).map(c => c.name)].map(c => (
                <button 
                  key={c} 
                  onClick={() => setFilterCategory(c)} 
@@ -174,8 +182,10 @@ const DashboardPage = () => {
            },
            { 
                l: 'Capital de Inventario', 
-               v: `S/ ${tInvGlobal.toLocaleString()}`, 
-               sub: `Inversión Ciclo: S/ ${tInvPeriod.toLocaleString()}`,
+               v: `S/ ${tInvGlobalPEN.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 
+               v_clp: tInvGlobalCLP > 0 ? `${tInvGlobalCLP.toLocaleString(undefined, { maximumFractionDigits: 0 })} CLP` : null,
+               sub: `Inversión Ciclo: S/ ${tInvPeriodPEN.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+               sub_clp: tInvPeriodCLP > 0 ? `Inc. ${tInvPeriodCLP.toLocaleString(undefined, { maximumFractionDigits: 0 })} CLP` : null,
                c: 'bg-white', 
                i: <Wallet size={24}/> 
            },
@@ -187,7 +197,13 @@ const DashboardPage = () => {
               </div>
               <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-2 ${d.accent ? 'opacity-70' : 'opacity-40'}`}>{d.l}</p>
               <p className="text-3xl font-black tabular-nums tracking-tighter">{d.v}</p>
-              {d.sub && <p className="text-[9px] font-bold uppercase mt-2 opacity-40">{d.sub}</p>}
+              {d.v_clp && <p className="text-xs font-bold text-slate-400 mt-1">{d.v_clp}</p>}
+              {d.sub && (
+                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 space-y-1">
+                   <p className="text-[9px] font-bold uppercase opacity-40">{d.sub}</p>
+                   {d.sub_clp && <p className="text-[8px] font-bold uppercase opacity-30">{d.sub_clp}</p>}
+                </div>
+              )}
               {d.critical && (
                 <div className="absolute top-6 right-6 w-3 h-3 bg-rose-500 rounded-full animate-ping opacity-75"></div>
               )}

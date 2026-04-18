@@ -16,7 +16,7 @@ const GlobalModals = () => {
     cost_clp: 0,
     cost_pen: 0,
     currency: 'CLP',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString()
   });
 
   const [searchProduct, setSearchProduct] = React.useState('');
@@ -55,7 +55,7 @@ const GlobalModals = () => {
       if (uErr) throw uErr;
 
       await refreshData(true);
-      setPurchaseForm({ product_id: '', quantity: 1, cost_clp: 0, cost_pen: 0, currency: 'CLP', date: new Date().toISOString().split('T')[0] });
+      setPurchaseForm({ product_id: '', quantity: 1, cost_clp: 0, cost_pen: 0, currency: 'CLP', date: new Date().toISOString() });
       closeModal('purchase');
     } catch (e) {
       alert(`Error en abastecimiento: ${e.message}`);
@@ -86,7 +86,7 @@ const GlobalModals = () => {
         ...saleForm,
         total_sale_pen,
         profit_pen,
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString()
       }]);
       if (sErr) throw sErr;
 
