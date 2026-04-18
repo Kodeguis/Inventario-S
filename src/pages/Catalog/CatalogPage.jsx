@@ -25,7 +25,7 @@ const CatalogPage = () => {
   const [editingProduct, setEditingProduct] = useState(null);
 
   const [productForm, setProductForm] = useState({ 
-    name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' 
+    name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP', stock: 0 
   });
 
   const filteredCatalog = products.filter(p => {
@@ -52,7 +52,8 @@ const CatalogPage = () => {
     if (isEdit) {
       ({ error } = await supabase.from('products').update(productForm).eq('id', editingProduct.id));
     } else {
-      ({ error } = await supabase.from('products').insert([productForm]));
+      const { error: iErr } = await supabase.from('products').insert([productForm]);
+      error = iErr;
     }
 
     if (!error) {
@@ -307,7 +308,13 @@ const CatalogPage = () => {
                     ).toFixed(2)}
                  </p>
               </div>
-           </div>
+            </div>
+
+             <div className="flex items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight italic">
+                  * Este registro es referencial. El stock físico debe ingresarse mediante el módulo de Compras/Abastecimiento.
+                </p>
+             </div>
 
            <button 
              type="submit" 

@@ -25,6 +25,7 @@ const DashboardPage = () => {
   const { openModal } = useModals();
   const [filterMonth, setFilterMonth] = React.useState('all');
   const [filterYear, setFilterYear] = React.useState('2026');
+  const [filterCategory, setFilterCategory] = React.useState('Todas');
 
   React.useEffect(() => {
     initGoogleContext();
@@ -59,8 +60,19 @@ const DashboardPage = () => {
     return matchesYear && date.getMonth().toString() === filterMonth;
   };
 
-  const dashboardSales = sales.filter(s => isPeriodMatch(s.date));
-  const dashboardPurchases = purchases.filter(p => isPeriodMatch(p.date));
+  const dashboardSales = sales.filter(s => 
+    isPeriodMatch(s.date) && 
+    (filterCategory === 'Todas' || s.product_category === filterCategory)
+  );
+  
+  const dashboardPurchases = purchases.filter(p => 
+    isPeriodMatch(p.date) && 
+    (filterCategory === 'Todas' || p.product_category === filterCategory)
+  );
+
+  const filteredProducts = products.filter(p => 
+    filterCategory === 'Todas' || p.category === filterCategory
+  );
 
   const tRev = dashboardSales.reduce((acc, s) => acc + (s.sale_price_pen * s.quantity || 0), 0);
   const tProf = dashboardSales.reduce((acc, s) => acc + (s.profit_pen || 0), 0);
@@ -71,14 +83,14 @@ const DashboardPage = () => {
     return acc + ((p.quantity||0) * (p.cost_clp||0) * rate);
   }, 0);
 
-  const tInvGlobal = products.reduce((acc, p) => {
+  const tInvGlobal = filteredProducts.reduce((acc, p) => {
     const rate = parseFloat(settings.exchange_rate) || 0.0039;
     if (p.currency === 'PEN') return acc + ((p.stock||0) * (p.cost_pen||0));
     return acc + ((p.stock||0) * (p.cost_clp||0) * rate);
   }, 0);
 
   const productsWithPurchases = new Set(purchases.map(pu => pu.product_id));
-  const lStock = products.filter(p => productsWithPurchases.has(p.id) && (p.stock || 0) < 5).length;
+  const lStock = filteredProducts.filter(p => productsWithPurchases.has(p.id) && (p.stock || 0) < 5).length;
 
   const handleExportExcel = () => {
     try {
@@ -129,7 +141,25 @@ const DashboardPage = () => {
                options={['2026', '2027', '2028']}
                className="w-28 h-10"
              />
-          </div>
+           </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex items-center gap-2 pr-4">
+         <div className="bg-slate-50 dark:bg-slate-950 px-4 h-10 flex items-center gap-2 rounded-xl">
+           <Filter size={14} className="text-indigo-600 opacity-40" />
+           <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Categoría</span>
+         </div>
+         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+            {['Todas', ...categories.map(c => c.name)].map(c => (
+               <button 
+                 key={c} 
+                 onClick={() => setFilterCategory(c)} 
+                 className={`px-5 h-10 whitespace-nowrap text-[9px] font-black rounded-xl transition-all border ${filterCategory === c ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+               >
+                 {c.toUpperCase()}
+               </button>
+            ))}
+         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">

@@ -16,9 +16,10 @@ import { useModals } from '../../context/ModalContext';
 import { supabase } from '../../lib/supabaseClient';
 
 const PurchasesPage = () => {
-  const { purchases, products, settings, loading, refreshData } = useInventory();
+  const { purchases, products, categories, settings, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [purchaseSearch, setPurchaseSearch] = useState('');
+  const [purchaseCategory, setPurchaseCategory] = useState('Todas');
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
 
   const formatDate = (dateStr) => {
@@ -34,10 +35,12 @@ const PurchasesPage = () => {
     }
   };
 
-  const filteredPurchases = (purchases || []).filter(p => 
-    (p.product_name || '').toLowerCase().includes(purchaseSearch.toLowerCase()) ||
-    (p.product_category || '').toLowerCase().includes(purchaseSearch.toLowerCase())
-  );
+  const filteredPurchases = (purchases || []).filter(p => {
+    const s = purchaseSearch.toLowerCase();
+    const matchesSearch = (p.product_name || '').toLowerCase().includes(s) || (p.product_category || '').toLowerCase().includes(s);
+    const matchesCategory = purchaseCategory === 'Todas' || p.product_category === purchaseCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const sortedPurchases = [...filteredPurchases].sort((a, b) => {
     const dateA = new Date(a.created_at || a.date || 0);
@@ -84,15 +87,27 @@ const PurchasesPage = () => {
           </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center gap-4 shadow-sm">
-         <div className="flex-1 relative group">
-            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col items-stretch gap-4 shadow-sm">
+         <div className="relative group">
+            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all font-mono" />
             <input 
               className="w-full h-14 bg-slate-50 dark:bg-slate-950 px-16 text-xs font-bold rounded-2xl border border-transparent focus:border-indigo-500/30 outline-none focus:ring-4 ring-indigo-500/5 transition-all uppercase placeholder:text-slate-400" 
-              placeholder="Buscar compra por producto..." 
+              placeholder="Buscar por producto..." 
               value={purchaseSearch} 
               onChange={e=>setPurchaseSearch(e.target.value)} 
             />
+         </div>
+
+         <div className="h-14 p-1.5 bg-slate-50 dark:bg-slate-950 rounded-2xl flex gap-2 overflow-x-auto no-scrollbar shadow-inner border border-transparent">
+            {['Todas', ...(categories || []).map(c=>c.name)].map(idx => (
+               <button 
+                 key={idx} 
+                 onClick={()=>setPurchaseCategory(idx)} 
+                 className={`px-6 h-full whitespace-nowrap text-[9px] font-black rounded-xl transition-all ${purchaseCategory === idx ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+               >
+                 {idx.toUpperCase()}
+               </button>
+            ))}
          </div>
       </div>
 

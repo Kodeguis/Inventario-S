@@ -58,7 +58,6 @@ export const InventoryProvider = ({ children }) => {
       ]);
 
       setProducts(p || []);
-      setProducts(p || []);
       
       // Flatten sales data
       const flattenedSales = (s || []).map(item => ({
@@ -70,12 +69,15 @@ export const InventoryProvider = ({ children }) => {
 
       setCategories(c || []);
 
-      // Flatten purchases data
-      const flattenedPurchases = (pu || []).map(item => ({
-        ...item,
-        product_name: item.products?.name || 'Producto Eliminado',
-        product_category: item.products?.category || 'General'
-      }));
+      // Flatten purchases data with robust product link check
+      const flattenedPurchases = (pu || []).map(item => {
+        const prod = Array.isArray(item.products) ? item.products[0] : item.products;
+        return {
+          ...item,
+          product_name: prod?.name || 'Producto Eliminado',
+          product_category: prod?.category || 'General'
+        };
+      });
       setPurchases(flattenedPurchases);
 
       if (stRows) {

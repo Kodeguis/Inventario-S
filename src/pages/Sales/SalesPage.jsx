@@ -22,6 +22,7 @@ const SalesPage = () => {
   const { sales, products, categories, purchases, loading, refreshData } = useInventory();
   const { openModal } = useModals();
   const [saleSearch, setSaleSearch] = useState('');
+  const [saleCategory, setSaleCategory] = useState('Todas');
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
 
   const formatDate = (dateStr) => {
@@ -37,10 +38,12 @@ const SalesPage = () => {
     }
   };
 
-  const filteredSales = (sales || []).filter(s => 
-    (s.product_name || '').toLowerCase().includes(saleSearch.toLowerCase()) ||
-    (s.product_category || '').toLowerCase().includes(saleSearch.toLowerCase())
-  );
+  const filteredSales = (sales || []).filter(s => {
+    const search = saleSearch.toLowerCase();
+    const matchesSearch = (s.product_name || '').toLowerCase().includes(search) || (s.product_category || '').toLowerCase().includes(search);
+    const matchesCategory = saleCategory === 'Todas' || s.product_category === saleCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const sortedSales = [...filteredSales].sort((a, b) => {
     const dateA = new Date(a.created_at || a.date || 0);
@@ -100,22 +103,28 @@ const SalesPage = () => {
           </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center gap-4 shadow-sm">
-         <div className="flex-1 relative group">
-            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-all" />
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col items-stretch gap-4 shadow-sm">
+         <div className="relative group">
+            <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-emerald-600 transition-all" />
             <input 
-              className="w-full h-14 bg-slate-50 dark:bg-slate-950 px-16 text-xs font-bold rounded-2xl border border-transparent focus:border-indigo-500/30 outline-none focus:ring-4 ring-indigo-500/5 transition-all uppercase placeholder:text-slate-400" 
-              placeholder="Buscar venta por producto..." 
+              className="w-full h-14 bg-slate-50 dark:bg-slate-950 px-16 text-xs font-bold rounded-2xl border border-transparent focus:border-emerald-500/30 outline-none focus:ring-4 ring-emerald-500/5 transition-all uppercase placeholder:text-slate-400" 
+              placeholder="Buscar liquidación por producto..." 
               value={saleSearch} 
               onChange={e=>setSaleSearch(e.target.value)} 
             />
          </div>
-         <button 
-           onClick={handleExport}
-           className="h-14 px-8 bg-slate-900 dark:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl shadow-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all"
-         >
-            <FileSpreadsheet size={18}/> Exportar Ventas
-         </button>
+
+         <div className="h-14 p-1.5 bg-slate-50 dark:bg-slate-950 rounded-2xl flex gap-2 overflow-x-auto no-scrollbar shadow-inner border border-transparent">
+            {['Todas', ...(categories || []).map(c=>c.name)].map(idx => (
+               <button 
+                 key={idx} 
+                 onClick={()=>setSaleCategory(idx)} 
+                 className={`px-6 h-full whitespace-nowrap text-[9px] font-black rounded-xl transition-all ${saleCategory === idx ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+               >
+                 {idx.toUpperCase()}
+               </button>
+            ))}
+         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">

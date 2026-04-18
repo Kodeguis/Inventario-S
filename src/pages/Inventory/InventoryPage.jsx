@@ -8,6 +8,7 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
 const InventoryPage = () => {
   const { products, categories, settings, loading, refreshData } = useInventory();
@@ -20,6 +21,18 @@ const InventoryPage = () => {
     const matchesCategory = inventoryCategory === 'Todas' || p.category === inventoryCategory;
     return (p.stock > 0) && matchesSearch && matchesCategory;
   });
+
+  const resetProductStock = async (id) => {
+    if (confirm('¿Retirar este producto del inventario activo? El stock físico se reseteará a 0, pero el producto permanecerá en el catálogo para futuras compras.')) {
+      try {
+        const { error } = await supabase.from('products').update({ stock: 0 }).eq('id', id);
+        if (error) throw error;
+        await refreshData(true);
+      } catch (err) {
+        alert(`Error al resetear stock: ${err.message}`);
+      }
+    }
+  };
 
 
 
@@ -102,11 +115,15 @@ const InventoryPage = () => {
                              <span className="text-[9px] font-black text-indigo-500/30 uppercase tracking-tighter">Valorizado</span>
                          </td>
                          <td className="px-10 py-7 text-right">
-                             <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                <button className="p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                                  <Edit2 size={16}/>
-                                </button>
-                             </div>
+                              <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                 <button 
+                                   onClick={() => resetProductStock(p.id)}
+                                   className="p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all shadow-sm"
+                                   title="Retirar de inventario (Reset Stock)"
+                                 >
+                                   <Trash2 size={16}/>
+                                 </button>
+                              </div>
                          </td>
                       </tr>
                     );

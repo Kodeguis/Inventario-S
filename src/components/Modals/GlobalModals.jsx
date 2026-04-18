@@ -22,9 +22,8 @@ const GlobalModals = () => {
   const [searchProduct, setSearchProduct] = React.useState('');
   const [searchCategory, setSearchCategory] = React.useState('Todas');
   const [isSelectOpen, setIsSelectOpen] = React.useState(false);
-  const [isAddingNew, setIsAddingNew] = React.useState(false);
   const [productForm, setProductForm] = React.useState({ 
-    name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' 
+    name: '', category: '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP', stock: 0 
   });
 
   const filteredProducts = (products || []).filter(p => {
@@ -55,9 +54,9 @@ const GlobalModals = () => {
       
       if (uErr) throw uErr;
 
-      closeModal('purchase');
-      refreshData(true);
+      await refreshData(true);
       setPurchaseForm({ product_id: '', quantity: 1, cost_clp: 0, cost_pen: 0, currency: 'CLP', date: new Date().toISOString().split('T')[0] });
+      closeModal('purchase');
     } catch (e) {
       alert(`Error en abastecimiento: ${e.message}`);
     }
@@ -86,7 +85,8 @@ const GlobalModals = () => {
       const { error: sErr } = await supabase.from('sales').insert([{
         ...saleForm,
         total_sale_pen,
-        profit_pen
+        profit_pen,
+        date: new Date().toISOString().split('T')[0]
       }]);
       if (sErr) throw sErr;
 
@@ -96,9 +96,9 @@ const GlobalModals = () => {
       }).eq('id', prod.id);
       if (uErr) throw uErr;
 
-      closeModal('sale');
-      refreshData(true);
+      await refreshData(true);
       setSaleForm({ product_id: '', quantity: 1, sale_price_pen: 0 });
+      closeModal('sale');
     } catch (e) {
       alert(`Error en venta: ${e.message}`);
     }
@@ -128,27 +128,22 @@ const GlobalModals = () => {
     e.preventDefault();
     try {
       const original = modalData;
-      
-      // 1. Actualizar la compra
       const { error: pErr } = await supabase.from('purchases').update(editPurchaseForm).eq('id', original.id);
       if (pErr) throw pErr;
 
-      // 2. Ajustar Stock del Producto
       const prod = (products || []).find(p => p.id === original.product_id);
       if (prod) {
         const diff = editPurchaseForm.quantity - original.quantity;
         const newStock = (prod.stock || 0) + diff;
-        
         const updateData = { stock: newStock };
         if (editPurchaseForm.currency === 'CLP') updateData.cost_clp = editPurchaseForm.cost_clp;
         else updateData.cost_pen = editPurchaseForm.cost_pen;
 
-        const { error: uErr } = await supabase.from('products').update(updateData).eq('id', prod.id);
-        if (uErr) throw uErr;
+        await supabase.from('products').update(updateData).eq('id', prod.id);
       }
 
+      await refreshData(true);
       closeModal('editPurchase');
-      refreshData(true);
     } catch (e) {
       alert(`Error al editar abastecimiento: ${e.message}`);
     }
@@ -170,16 +165,13 @@ const GlobalModals = () => {
     try {
       const original = modalData;
       const prod = (products || []).find(p => p.id === original.product_id);
-      const rate = parseFloat(settings.exchange_rate) || 0.0039;
-
       if (!prod) throw new Error("Producto no encontrado");
 
-      // Recalcular métricas de la venta
+      const rate = parseFloat(settings.exchange_rate) || 0.0039;
       const total_sale_pen = editSaleForm.quantity * editSaleForm.sale_price_pen;
       const cost_pen_at_time = prod.currency === 'PEN' ? prod.cost_pen : (prod.cost_clp * rate);
       const profit_pen = total_sale_pen - (editSaleForm.quantity * cost_pen_at_time);
       
-      // 1. Actualizar la venta
       const { error: sErr } = await supabase.from('sales').update({
         ...editSaleForm,
         total_sale_pen,
@@ -187,14 +179,12 @@ const GlobalModals = () => {
       }).eq('id', original.id);
       if (sErr) throw sErr;
 
-      // 2. Ajustar Stock
-      const diff = original.quantity - editSaleForm.quantity; // Si vendí menos, devuelvo stock. Si vendí más, resto.
+      const diff = original.quantity - editSaleForm.quantity;
       const newStock = (prod.stock || 0) + diff;
-      
       await supabase.from('products').update({ stock: newStock }).eq('id', prod.id);
 
+      await refreshData(true);
       closeModal('editSale');
-      refreshData(true);
     } catch (e) {
       alert(`Error al editar venta: ${e.message}`);
     }
@@ -203,16 +193,11 @@ const GlobalModals = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.from('products').insert([productForm]).select();
-      if (error) throw error;
+      await supabase.from('products').insert([productForm]);
       
-      refreshData(true);
+      await refreshData(true);
       closeModal('product');
-      // Limpiar formulario
-      setProductForm({ name: '', category: categories[0]?.name || '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP' });
-      
-      // Si veníamos de una compra, sería genial volver a abrirla con el producto seleccionado
-      // Pero por ahora solo cerramos y notificamos éxito
+      setProductForm({ name: '', category: categories?.[0]?.name || '', brand: '', cost_clp: 0, cost_pen: 0, suggested_price: 0, currency: 'CLP', stock: 0 });
     } catch (e) {
       alert(`Error al registrar producto: ${e.message}`);
     }
@@ -271,7 +256,7 @@ const GlobalModals = () => {
               </div>
 
               <div className="relative group">
-                 <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-indigo-500 transition-colors uppercase">{productForm.currency}</span>
+                 <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-indigo-500 transition-colors uppercase">{productForm.currency}</span>
                  <input 
                    type="number" 
                    step="0.01"
@@ -287,19 +272,25 @@ const GlobalModals = () => {
            </div>
 
            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Precio de Venta Sugerido (S/)</label>
-              <div className="relative group">
-                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-emerald-500 transition-colors uppercase font-mono">PEN</span>
-                 <input 
-                   type="number" 
-                   step="0.01" 
-                   required 
-                   className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-emerald-500/20 outline-none tabular-nums shadow-inner transition-all" 
-                   value={productForm.suggested_price || ''} 
-                   onChange={e => setProductForm({...productForm, suggested_price: parseFloat(e.target.value)})} 
-                 />
-              </div>
-           </div>
+               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Precio de Venta Sugerido (S/)</label>
+               <div className="relative group">
+                  <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-emerald-500 transition-colors uppercase font-mono">PEN</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    className="w-full h-14 bg-slate-50 dark:bg-slate-900 pl-16 pr-8 text-xl font-black rounded-2xl border-2 border-transparent focus:border-emerald-500/20 outline-none tabular-nums shadow-inner transition-all"
+                    value={productForm.suggested_price || ''}
+                    onChange={e => setProductForm({...productForm, suggested_price: parseFloat(e.target.value)})}
+                  />
+               </div>
+            </div>
+
+             <div className="flex items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight italic">
+                   * Este registro es referencial. El stock físico se registra mediante Compras.
+                </p>
+             </div>
 
            <button 
              type="submit" 
@@ -343,7 +334,6 @@ const GlobalModals = () => {
                           />
                        </div>
 
-                       {/* Filtro de Categorías rápido */}
                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex gap-2 overflow-x-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
                           {['Todas', ...(categories || []).map(c => c.name)].map(cat => (
                              <button
@@ -397,7 +387,7 @@ const GlobalModals = () => {
               <div className="space-y-2">
                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Unidades Vendidas</label>
                  <div className="relative group">
-                    <Hash size={16} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 group-focus-within:text-emerald-600 transition-all" />
+                    <Hash size={16} className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:text-emerald-600 transition-all" />
                     <input 
                       type="number" 
                       required 
@@ -412,7 +402,7 @@ const GlobalModals = () => {
               <div className="space-y-2">
                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Precio Final (S/)</label>
                  <div className="relative group">
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-emerald-600 transition-colors uppercase font-mono">PEN</span>
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-emerald-600 transition-colors uppercase font-mono">PEN</span>
                     <input 
                       type="number" 
                       step="0.01" 
@@ -485,7 +475,6 @@ const GlobalModals = () => {
                           />
                        </div>
 
-                       {/* Filtro de Categorías rápido */}
                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex gap-2 overflow-x-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/50">
                           {['Todas', ...(categories || []).map(c => c.name)].map(cat => (
                              <button
@@ -530,7 +519,6 @@ const GlobalModals = () => {
                              </button>
                           ))}
                           
-                           {/* Acceso Rápido a Catálogo */}
                            <button
                               type="button"
                               onClick={() => {
@@ -590,7 +578,7 @@ const GlobalModals = () => {
               </div>
 
               <div className="relative group">
-                 <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-indigo-500 transition-colors uppercase">{purchaseForm.currency}</span>
+                 <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-indigo-500 transition-colors uppercase">{purchaseForm.currency}</span>
                  <input 
                    type="number" 
                    step="0.01"
@@ -623,6 +611,7 @@ const GlobalModals = () => {
            </button>
         </form>
       </Modal>
+
       <Modal 
         isOpen={modals.saleDetail} 
         onClose={() => closeModal('saleDetail')} 
@@ -690,6 +679,7 @@ const GlobalModals = () => {
           </div>
         )}
       </Modal>
+
       <Modal 
         isOpen={modals.editPurchase} 
         onClose={() => closeModal('editPurchase')} 
@@ -745,7 +735,7 @@ const GlobalModals = () => {
                 </div>
 
                 <div className="relative group">
-                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within/field:text-indigo-500 transition-colors uppercase">{editPurchaseForm.currency}</span>
+                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-indigo-500 transition-colors uppercase">{editPurchaseForm.currency}</span>
                    <input 
                      type="number" 
                      step="0.01"
@@ -769,6 +759,7 @@ const GlobalModals = () => {
           </form>
         )}
       </Modal>
+
       <Modal 
         isOpen={modals.editSale} 
         onClose={() => closeModal('editSale')} 
