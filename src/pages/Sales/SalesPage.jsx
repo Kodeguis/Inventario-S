@@ -12,7 +12,8 @@ import {
   Trash2,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  BookOpen
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
 import { exportToExcel } from '../../utils/excelExport';
@@ -40,7 +41,9 @@ const SalesPage = () => {
 
   const filteredSales = (sales || []).filter(s => {
     const search = saleSearch.toLowerCase();
-    const matchesSearch = (s.product_name || '').toLowerCase().includes(search) || (s.product_category || '').toLowerCase().includes(search);
+    const matchesSearch = (s.product_name || '').toLowerCase().includes(search) || 
+                          (s.product_category || '').toLowerCase().includes(search) ||
+                          (s.batch || '').toLowerCase().includes(search);
     const matchesCategory = saleCategory === 'Todas' || s.product_category === saleCategory;
     return matchesSearch && matchesCategory;
   });
@@ -143,6 +146,7 @@ const SalesPage = () => {
                      </th>
                      <th className="px-10 py-6">Producto Operado</th>
                      <th className="px-10 py-6 text-center">Volumen</th>
+                     <th className="px-10 py-6 text-center">Tanda</th>
                      <th className="px-10 py-6 text-right">Ticket Total</th>
                      <th className="px-10 py-6 text-right">Utilidad</th>
                      <th className="px-10 py-6"></th>
@@ -173,6 +177,16 @@ const SalesPage = () => {
                        </td>
                        <td className="px-10 py-7 text-center">
                           <span className="text-sm font-black text-slate-900 dark:text-white tabular-nums font-mono">{s.quantity} U.</span>
+                       </td>
+                       <td className="px-10 py-7 text-center">
+                          {s.batch ? (
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black uppercase border border-emerald-100 dark:border-emerald-900/50">
+                               <BookOpen size={12} />
+                               {s.batch}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-300 uppercase italic">Sin tanda</span>
+                          )}
                        </td>
                        <td className="px-10 py-7 text-right">
                           <div className="inline-block px-5 py-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-[14px] font-black tabular-nums border border-emerald-500/5 transition-all">

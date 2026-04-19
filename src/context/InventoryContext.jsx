@@ -11,6 +11,7 @@ export const InventoryProvider = ({ children }) => {
   const [sales, setSales] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [settings, setSettings] = useState({ exchange_rate: '0.0039' });
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +33,7 @@ export const InventoryProvider = ({ children }) => {
         setSales([]);
         setCategories([]);
         setPurchases([]);
+        setBatches([]);
       }
     });
 
@@ -48,13 +50,15 @@ export const InventoryProvider = ({ children }) => {
         { data: s },
         { data: stRows },
         { data: c },
-        { data: pu }
+        { data: pu },
+        { data: b }
       ] = await Promise.all([
         supabase.from('products').select('*').order('name', { ascending: true }),
         supabase.from('sales').select('*, products(name, brand, category)').order('date', { ascending: false }),
         supabase.from('settings').select('*'),
         supabase.from('categories').select('*').order('name', { ascending: true }),
-        supabase.from('purchases').select('*, products(name, brand, category)').order('date', { ascending: false })
+        supabase.from('purchases').select('*, products(name, brand, category)').order('date', { ascending: false }),
+        supabase.from('batches').select('*').order('created_at', { ascending: false })
       ]);
 
       setProducts(p || []);
@@ -68,6 +72,7 @@ export const InventoryProvider = ({ children }) => {
       setSales(flattenedSales);
 
       setCategories(c || []);
+      setBatches(b || []);
 
       // Flatten purchases data with robust product link check
       const flattenedPurchases = (pu || []).map(item => {
@@ -100,6 +105,7 @@ export const InventoryProvider = ({ children }) => {
     sales,
     purchases,
     categories,
+    batches,
     settings,
     loading,
     refreshData,

@@ -7,14 +7,16 @@ import {
   Trash2, 
   AlertCircle, 
   Tag,
-  ShieldAlert
+  ShieldAlert,
+  BookOpen
 } from 'lucide-react';
 
 import { supabase } from '../../lib/supabaseClient';
 
 const SettingsPage = () => {
-  const { categories, settings, refreshData, setSettings, loading } = useInventory();
+  const { categories, batches, settings, refreshData, setSettings, loading } = useInventory();
   const [newCatName, setNewCatName] = useState('');
+  const [newBatchName, setNewBatchName] = useState('');
 
   const updateSettings = async (s) => {
     try {
@@ -30,6 +32,14 @@ const SettingsPage = () => {
 
   const addCategory = async () => {
     if (!newCatName) return;
+    const nameTrimmed = newCatName.trim().toUpperCase();
+    
+    // Verificar si ya existe en la lista local (case-insensitive)
+    const exists = categories.some(c => c.name.toUpperCase() === nameTrimmed);
+    if (exists) {
+      return alert('⚠️ Esta categoría ya existe.');
+    }
+
     try {
       const { error } = await supabase.from('categories').insert([{ name: newCatName.trim() }]);
       if (error) throw error;
@@ -43,6 +53,33 @@ const SettingsPage = () => {
   const deleteCategory = async (id) => {
     if (confirm('¿Eliminar esta categoría? Esto no afectará a los productos existentes.')) {
       const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (!error) refreshData(true);
+    }
+  };
+
+  const addBatch = async () => {
+    if (!newBatchName) return;
+    const nameTrimmed = newBatchName.trim().toUpperCase();
+
+    // Verificar si ya existe en la lista local (case-insensitive)
+    const exists = batches.some(b => b.name.toUpperCase() === nameTrimmed);
+    if (exists) {
+      return alert('⚠️ Esta tanda ya existe.');
+    }
+
+    try {
+      const { error } = await supabase.from('batches').insert([{ name: newBatchName.trim() }]);
+      if (error) throw error;
+      setNewBatchName('');
+      refreshData(true);
+    } catch (e) {
+      alert(`Error al añadir tanda: ${e.message}`);
+    }
+  };
+
+  const deleteBatch = async (id) => {
+    if (confirm('¿Eliminar esta tanda? No afectará a los registros pasados.')) {
+      const { error } = await supabase.from('batches').delete().eq('id', id);
       if (!error) refreshData(true);
     }
   };
@@ -138,6 +175,46 @@ const SettingsPage = () => {
                       </div>
                       <button 
                         onClick={()=>deleteCategory(c.id)} 
+                        className="opacity-0 group-hover:opacity-100 h-12 w-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 shadow-lg shadow-rose-500/20"
+                      >
+                        <Trash2 size={18}/>
+                      </button>
+                  </div>
+               ))}
+            </div>
+         </div>
+
+         {/* TANDAS */}
+         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10">
+            <div className="flex items-center gap-4 opacity-40">
+               <BookOpen size={20}/>
+               <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">Gestión de Tandas</h3>
+            </div>
+            
+            <div className="flex gap-4 p-2 bg-slate-50 dark:bg-slate-950 rounded-[1.75rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+               <input 
+                 className="flex-1 bg-transparent px-8 py-5 text-sm font-black outline-none uppercase placeholder:text-slate-400" 
+                 placeholder="Nombre de la tanda (ej: TANDA 1)..." 
+                 value={newBatchName} 
+                 onChange={e=>setNewBatchName(e.target.value)} 
+               />
+               <button 
+                 onClick={addBatch} 
+                 className="h-16 w-16 bg-slate-900 dark:bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:opacity-80 transition-all shadow-xl active:scale-75"
+               >
+                 <Plus size={32}/>
+               </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-4 no-scrollbar">
+               {batches.map(b => (
+                  <div key={b.id} className="flex items-center justify-between p-6 bg-white dark:bg-slate-950 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 hover:border-emerald-500/30 hover:scale-[1.02] transition-all group shadow-sm">
+                      <div className="flex items-center gap-5">
+                          <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]"></div>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">{b.name}</span>
+                      </div>
+                      <button 
+                        onClick={()=>deleteBatch(b.id)} 
                         className="opacity-0 group-hover:opacity-100 h-12 w-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 shadow-lg shadow-rose-500/20"
                       >
                         <Trash2 size={18}/>

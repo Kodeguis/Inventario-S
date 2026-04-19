@@ -10,7 +10,8 @@ import {
   Edit2,
   Trash2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  BookOpen
 } from 'lucide-react';
 import { useModals } from '../../context/ModalContext';
 import { supabase } from '../../lib/supabaseClient';
@@ -37,7 +38,9 @@ const PurchasesPage = () => {
 
   const filteredPurchases = (purchases || []).filter(p => {
     const s = purchaseSearch.toLowerCase();
-    const matchesSearch = (p.product_name || '').toLowerCase().includes(s) || (p.product_category || '').toLowerCase().includes(s);
+    const matchesSearch = (p.product_name || '').toLowerCase().includes(s) || 
+                          (p.product_category || '').toLowerCase().includes(s) ||
+                          (p.batch || '').toLowerCase().includes(s);
     const matchesCategory = purchaseCategory === 'Todas' || p.product_category === purchaseCategory;
     return matchesSearch && matchesCategory;
   });
@@ -127,6 +130,7 @@ const PurchasesPage = () => {
                      </th>
                      <th className="px-10 py-6">Ítem Adquirido</th>
                      <th className="px-10 py-6 text-center">Cantidad</th>
+                     <th className="px-10 py-6 text-center">Tanda</th>
                      <th className="px-10 py-6 text-right">Inversión (PEN)</th>
                      <th className="px-10 py-6"></th>
                   </tr>
@@ -160,6 +164,16 @@ const PurchasesPage = () => {
                                <ArrowDownLeft size={14} className="text-emerald-500" />
                                {p.quantity} U.
                             </div>
+                         </td>
+                         <td className="px-10 py-7 text-center">
+                            {p.batch ? (
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase border border-indigo-100 dark:border-indigo-900/50">
+                                <BookOpen size={12} />
+                                {p.batch}
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-300 uppercase italic">Sin tanda</span>
+                            )}
                          </td>
                          <td className="px-10 py-7 text-right">
                             <div className="inline-block px-5 py-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-xl text-[14px] font-black tabular-nums border border-rose-100 dark:border-rose-900/50">
