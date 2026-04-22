@@ -8,246 +8,267 @@ import {
   AlertCircle, 
   Tag,
   ShieldAlert,
-  BookOpen
+  ArrowRight,
+  RefreshCw,
+  Layers,
+  Palette,
+  Check
 } from 'lucide-react';
-
 import { supabase } from '../../lib/supabaseClient';
 
 const SettingsPage = () => {
-  const { categories, batches, settings, refreshData, setSettings, loading } = useInventory();
-  const [newCatName, setNewCatName] = useState('');
-  const [newBatchName, setNewBatchName] = useState('');
+    const { categories, batches, settings, refreshData, setSettings } = useInventory();
+    const [newCatName, setNewCatName] = useState('');
+    const [newBatchName, setNewBatchName] = useState('');
+    const [batchCategory, setBatchCategory] = useState('');
 
-  const updateSettings = async (s) => {
-    try {
-      for (const key in s) {
-        await supabase.from('settings').upsert({ key, value: s[key].toString() });
-      }
-      alert('✅ Parámetros sincronizados correctamente');
-      refreshData(true);
-    } catch (e) {
-      alert(`Error: ${e.message}`);
-    }
-  };
+    const updateSettings = async (s) => {
+        try {
+            for (const key in s) {
+                const val = s[key];
+                if (val !== undefined && val !== null) {
+                    const { error } = await supabase.from('settings').upsert({ key, value: val.toString() });
+                    if (error) throw error;
+                }
+            }
+            // Sincronización inmediata
+            setSettings(prev => ({ ...prev, ...s }));
+            setTimeout(() => refreshData(true), 100);
+        } catch (e) {
+            alert(`Error de sincronización: ${e.message}`);
+        }
+    };
 
-  const addCategory = async () => {
-    if (!newCatName) return;
-    const nameTrimmed = newCatName.trim().toUpperCase();
-    
-    // Verificar si ya existe en la lista local (case-insensitive)
-    const exists = categories.some(c => c.name.toUpperCase() === nameTrimmed);
-    if (exists) {
-      return alert('⚠️ Esta categoría ya existe.');
-    }
+    const addCategory = async () => {
+        if (!newCatName) return;
+        const nameTrimmed = newCatName.trim().toUpperCase();
+        const exists = (categories || []).some(c => c.name.toUpperCase() === nameTrimmed);
+        if (exists) return alert('⚠️ Esta categoría ya existe.');
 
-    try {
-      const { error } = await supabase.from('categories').insert([{ name: newCatName.trim() }]);
-      if (error) throw error;
-      setNewCatName('');
-      refreshData(true);
-    } catch (e) {
-      alert(`Error al añadir: ${e.message}`);
-    }
-  };
+        try {
+            const { error } = await supabase.from('categories').insert([{ name: newCatName.trim() }]);
+            if (error) throw error;
+            setNewCatName('');
+            refreshData(true);
+        } catch (e) {
+            alert(`Error al añadir: ${e.message}`);
+        }
+    };
 
-  const deleteCategory = async (id) => {
-    if (confirm('¿Eliminar esta categoría? Esto no afectará a los productos existentes.')) {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (!error) refreshData(true);
-    }
-  };
+    const deleteCategory = async (id) => {
+        if (window.confirm('¿Eliminar esta categoría? Esto no afectará a los productos existentes.')) {
+            const { error } = await supabase.from('categories').delete().eq('id', id);
+            if (!error) refreshData(true);
+        }
+    };
 
-  const addBatch = async () => {
-    if (!newBatchName) return;
-    const nameTrimmed = newBatchName.trim().toUpperCase();
+    const addBatch = async () => {
+        if (!newBatchName || !batchCategory) return alert('⚠️ Debes ingresar nombre y categoría.');
+        const nameTrimmed = newBatchName.trim().toUpperCase();
+        const exists = (batches || []).some(b => b.name.toUpperCase() === nameTrimmed && b.category === batchCategory);
+        if (exists) return alert('⚠️ Esta tanda ya existe.');
 
-    // Verificar si ya existe en la lista local (case-insensitive)
-    const exists = batches.some(b => b.name.toUpperCase() === nameTrimmed);
-    if (exists) {
-      return alert('⚠️ Esta tanda ya existe.');
-    }
+        try {
+            const { error } = await supabase.from('batches').insert([{ 
+                name: newBatchName.trim(),
+                category: batchCategory 
+            }]);
+            if (error) throw error;
+            setNewBatchName('');
+            refreshData(true);
+        } catch (e) {
+            alert(`Error al añadir tanda: ${e.message}`);
+        }
+    };
 
-    try {
-      const { error } = await supabase.from('batches').insert([{ name: newBatchName.trim() }]);
-      if (error) throw error;
-      setNewBatchName('');
-      refreshData(true);
-    } catch (e) {
-      alert(`Error al añadir tanda: ${e.message}`);
-    }
-  };
+    const deleteBatch = async (id) => {
+        if (window.confirm('¿Eliminar esta tanda? No afectará a los registros pasados.')) {
+            const { error } = await supabase.from('batches').delete().eq('id', id);
+            if (!error) refreshData(true);
+        }
+    };
 
-  const deleteBatch = async (id) => {
-    if (confirm('¿Eliminar esta tanda? No afectará a los registros pasados.')) {
-      const { error } = await supabase.from('batches').delete().eq('id', id);
-      if (!error) refreshData(true);
-    }
-  };
+    const resetSystem = async () => {
+        if (window.confirm('⚠️ ATENCIÓN: Esta acción BORRARÁ TODO de forma irreversible.')) {
+            try {
+                await supabase.from('purchases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await supabase.from('sales').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                alert('Sistema reseteado correctamente');
+                refreshData(true);
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+            }
+        }
+    };
 
-  const resetSystem = async () => {
-    if (confirm('⚠️ ATENCIÓN: Esta acción BORRARÁ TODO (Productos, Ventas, Compras) de forma irreversible.')) {
-      try {
-        await supabase.from('purchases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('sales').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        alert('Sistema reseteado correctamente');
-        refreshData(true);
-      } catch (e) {
-        alert(`Error: ${e.message}`);
-      }
-    }
-  };
-
-
-
-  return (
-    <div className="space-y-10">
-      <div className="flex items-center gap-5">
-         <div className="p-3.5 bg-indigo-600 rounded-[1.25rem] text-white shadow-xl shadow-indigo-600/20">
-            <Settings size={28}/>
-         </div>
-         <div>
-           <h2 className="text-3xl font-black uppercase tracking-tight">Maquinaria de Ajustes</h2>
-           <p className="text-[11px] uppercase font-bold text-slate-400 tracking-widest mt-1">Configuración global del motor de inventario</p>
-         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-10">
-         {/* TIPO DE CAMBIO */}
-         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-12 opacity-[0.03] -rotate-12 transition-transform group-hover:rotate-0 duration-1000">
-              <Globe size={180}/>
-            </div>
-            <div className="flex items-center gap-4 opacity-40">
-               <Globe size={20}/>
-               <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">Conversión Divisaria</h3>
-            </div>
-            
-            <div className="flex flex-col items-center">
-               <p className="text-[10px] font-black text-slate-400 mb-8 tracking-[0.5em] uppercase">1.00 CLP ⇔ PEN</p>
-               <div className="flex items-center gap-8 bg-slate-50 dark:bg-slate-950 p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-inner w-full">
-                  <input 
-                    type="number" 
-                    step="0.0001" 
-                    className="bg-transparent text-7xl font-black text-indigo-600 outline-none w-full tabular-nums text-center focus:scale-105 transition-transform" 
-                    value={settings.exchange_rate} 
-                    onChange={e=>setSettings({...settings, exchange_rate: e.target.value})} 
-                  />
-                  <span className="text-3xl font-black opacity-20 pr-4">PEN</span>
-               </div>
-            </div>
-            <button 
-              onClick={()=>updateSettings(settings)} 
-              className="w-full h-20 bg-slate-900 dark:bg-indigo-600 text-white rounded-[1.5rem] text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl hover:bg-slate-800 dark:hover:bg-indigo-500 transition-all active:scale-95"
-            >
-              Sincronizar Parámetros Maestros
-            </button>
-         </div>
-
-         {/* CATEGORÍAS */}
-         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10">
-            <div className="flex items-center gap-4 opacity-40">
-               <Tag size={20}/>
-               <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">Categorías Dinámicas</h3>
-            </div>
-            
-            <div className="flex gap-4 p-2 bg-slate-50 dark:bg-slate-950 rounded-[1.75rem] border border-slate-100 dark:border-slate-800 shadow-inner">
-               <input 
-                 className="flex-1 bg-transparent px-8 py-5 text-sm font-black outline-none uppercase placeholder:text-slate-400" 
-                 placeholder="Definir nueva categoría..." 
-                 value={newCatName} 
-                 onChange={e=>setNewCatName(e.target.value)} 
-               />
-               <button 
-                 onClick={addCategory} 
-                 className="h-16 w-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-xl active:scale-75"
-               >
-                 <Plus size={32}/>
-               </button>
+    return (
+        <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header Shadcn Style */}
+            <div className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-600/10 rounded-lg">
+                        <Settings className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Configuración</h1>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Administra las preferencias del sistema, categorías y ciclos de inventario.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-4 no-scrollbar">
-               {categories.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-6 bg-white dark:bg-slate-950 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30 hover:scale-[1.02] transition-all group shadow-sm">
-                      <div className="flex items-center gap-5">
-                          <div className="w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(79,70,229,0.4)]"></div>
-                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">{c.name}</span>
-                      </div>
-                      <button 
-                        onClick={()=>deleteCategory(c.id)} 
-                        className="opacity-0 group-hover:opacity-100 h-12 w-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 shadow-lg shadow-rose-500/20"
-                      >
-                        <Trash2 size={18}/>
-                      </button>
-                  </div>
-               ))}
-            </div>
-         </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Card: Divisas */}
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-3">
+                            <Globe className="w-4 h-4 text-slate-400" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Mercado y Divisas</h3>
+                                <p className="text-xs text-slate-500">Tasa de cambio para operaciones CLP/PEN.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6 space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Tasa actual (1.00 CLP ⇔ PEN)</label>
+                            <input 
+                                type="number" 
+                                step="0.0001" 
+                                className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-4 text-xl font-bold tabular-nums outline-none focus:ring-2 focus:ring-blue-600/20 transition-all" 
+                                value={settings.exchange_rate} 
+                                onChange={e=>setSettings({...settings, exchange_rate: e.target.value})} 
+                            />
+                        </div>
+                        <button 
+                            onClick={()=>updateSettings({ exchange_rate: settings.exchange_rate })} 
+                            className="w-full h-10 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" /> Actualizar Tasa
+                        </button>
+                    </div>
+                </div>
 
-         {/* TANDAS */}
-         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10">
-            <div className="flex items-center gap-4 opacity-40">
-               <BookOpen size={20}/>
-               <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">Gestión de Tandas</h3>
-            </div>
-            
-            <div className="flex gap-4 p-2 bg-slate-50 dark:bg-slate-950 rounded-[1.75rem] border border-slate-100 dark:border-slate-800 shadow-inner">
-               <input 
-                 className="flex-1 bg-transparent px-8 py-5 text-sm font-black outline-none uppercase placeholder:text-slate-400" 
-                 placeholder="Nombre de la tanda (ej: TANDA 1)..." 
-                 value={newBatchName} 
-                 onChange={e=>setNewBatchName(e.target.value)} 
-               />
-               <button 
-                 onClick={addBatch} 
-                 className="h-16 w-16 bg-slate-900 dark:bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:opacity-80 transition-all shadow-xl active:scale-75"
-               >
-                 <Plus size={32}/>
-               </button>
-            </div>
+                {/* Card: Categorías */}
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-3">
+                            <Tag className="w-4 h-4 text-slate-400" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Categorías y Segmentos</h3>
+                                <p className="text-xs text-slate-500">Administra la clasificación de tus productos.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6 flex-1 space-y-4">
+                        <div className="flex gap-2">
+                            <input 
+                                className="flex-1 bg-slate-50 dark:bg-white/5 px-4 h-10 text-xs font-medium rounded-lg border border-slate-200 dark:border-white/10 outline-none focus:ring-1 focus:ring-blue-600/50 transition-all" 
+                                placeholder="Nueva categoría..." 
+                                value={newCatName} 
+                                onChange={e=>setNewCatName(e.target.value)} 
+                            />
+                            <button onClick={addCategory} className="px-4 bg-blue-600 text-white rounded-lg hover:opacity-90 transition-all flex items-center justify-center">
+                                <Plus size={18}/>
+                            </button>
+                        </div>
+                        <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                            {(categories || []).map(c => (
+                                <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-white/[0.02] rounded-md border border-slate-100 dark:border-white/5 group">
+                                    <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 uppercase tracking-tighter">{c.name}</span>
+                                    <button onClick={()=>deleteCategory(c.id)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-600/10 rounded-md transition-all">
+                                        <Trash2 size={13}/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-4 no-scrollbar">
-               {batches.map(b => (
-                  <div key={b.id} className="flex items-center justify-between p-6 bg-white dark:bg-slate-950 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 hover:border-emerald-500/30 hover:scale-[1.02] transition-all group shadow-sm">
-                      <div className="flex items-center gap-5">
-                          <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]"></div>
-                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">{b.name}</span>
-                      </div>
-                      <button 
-                        onClick={()=>deleteBatch(b.id)} 
-                        className="opacity-0 group-hover:opacity-100 h-12 w-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 shadow-lg shadow-rose-500/20"
-                      >
-                        <Trash2 size={18}/>
-                      </button>
-                  </div>
-               ))}
-            </div>
-         </div>
+                {/* Card: Tandas */}
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-3">
+                            <Layers className="w-4 h-4 text-slate-400" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ciclos Operativos (Tandas)</h3>
+                                <p className="text-xs text-slate-500">Organiza tu stock por lotes o temporadas.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6 flex-1 space-y-4">
+                        <div className="grid grid-cols-1 gap-2">
+                            <input 
+                                className="w-full bg-slate-50 dark:bg-white/5 px-4 h-10 text-xs font-medium rounded-lg border border-slate-200 dark:border-white/10 outline-none" 
+                                placeholder="Nombre de ciclo (ej: TANDA 1)..." 
+                                value={newBatchName} 
+                                onChange={e=>setNewBatchName(e.target.value)} 
+                            />
+                            <div className="flex gap-2">
+                                <select 
+                                    className="flex-1 bg-slate-50 dark:bg-zinc-900 px-4 h-10 text-[11px] font-medium rounded-lg border border-slate-200 dark:border-white/10 outline-none text-slate-500 focus:ring-2 focus:ring-blue-600/20 transition-all appearance-none cursor-pointer"
+                                    value={batchCategory}
+                                    onChange={e => setBatchCategory(e.target.value)}
+                                >
+                                    <option value="" className="bg-white dark:bg-zinc-950">Seleccionar Categoría...</option>
+                                    {(categories || []).map(c => (
+                                        <option key={c.id} value={c.name} className="bg-white dark:bg-zinc-950">
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button onClick={addBatch} className="px-4 bg-blue-600 text-white rounded-lg hover:opacity-90 transition-all font-semibold text-[10px] uppercase tracking-widest">
+                                    Crear
+                                </button>
+                            </div>
+                        </div>
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {(categories || []).map(cat => {
+                                const catBatches = (batches || []).filter(b => b.category === cat.name);
+                                if (catBatches.length === 0) return null;
+                                return (
+                                    <div key={cat.id} className="space-y-1.5">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">{cat.name}</p>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {catBatches.map(b => (
+                                                <div key={b.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-white/[0.02] rounded-md border border-slate-100 dark:border-white/5 group">
+                                                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{b.name}</span>
+                                                    <button onClick={()=>deleteBatch(b.id)} className="p-1 text-slate-300 hover:text-red-500 transition-colors">
+                                                        <Trash2 size={12}/>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
 
-         {/* ZONA DE PELIGRO */}
-         <div className="bg-rose-50/50 dark:bg-rose-950/10 p-12 rounded-[3.5rem] border border-rose-100 dark:border-rose-900/40 space-y-8 relative overflow-hidden group">
-            <div className="absolute -bottom-10 -right-10 opacity-[0.05] -rotate-12 transition-transform group-hover:scale-110 duration-700">
-               <ShieldAlert size={200} />
+                {/* Card: Zona Peligro */}
+                <div className="md:col-span-2 rounded-xl border-2 border-red-500/20 bg-red-500/5 p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                    <div className="flex items-center gap-5 relative z-10">
+                        <div className="p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20">
+                            <ShieldAlert size={28}/>
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-bold text-red-600 dark:text-red-500">Zona de Peligro</h3>
+                            <p className="text-xs text-red-600/70 dark:text-red-500/60 max-w-md font-medium">La purga de datos eliminará toda la historia comercial de forma permanente e irreversible.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={resetSystem} 
+                        className="px-8 h-12 bg-red-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-slate-900 transition-all relative z-10 shadow-lg shadow-red-600/20"
+                    >
+                        Resetear Sistema Total
+                    </button>
+                    {/* Decorativo fondo */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 rounded-full -mr-20 -mt-20 blur-3xl transition-transform group-hover:scale-110" />
+                </div>
+
             </div>
-            <div className="flex flex-col items-center text-center space-y-4">
-               <div className="p-4 bg-rose-600 rounded-2xl text-white shadow-xl shadow-rose-600/20">
-                  <AlertCircle size={32}/>
-               </div>
-               <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-rose-600">Protocolo de Emergencia</h3>
-               <p className="text-[11px] font-bold text-rose-500/70 uppercase leading-relaxed max-w-md">
-                 Esta acción ejecutará una purga total de la base de datos. Todos los registros comerciales serán eliminados permanentemente del sistema.
-               </p>
-            </div>
-            <button 
-              onClick={resetSystem} 
-              className="w-full h-20 bg-rose-600 text-white rounded-3xl text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-rose-600/30 hover:bg-rose-700 transition-all active:scale-95 relative z-10"
-            >
-               Reiniciar Sistema (Factory Reset)
-            </button>
-         </div>
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
 export default SettingsPage;

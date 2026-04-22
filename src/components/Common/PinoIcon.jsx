@@ -30,9 +30,9 @@ const PinoIcon = ({ size = 24, className = "" }) => {
       <g transform="translate(50, 56) scale(1.1)">
         <path 
           d="M-8 -4L-10 6H10L8 -4L5 1L0 -4L-5 1L-8 -4Z" 
-          className="fill-white dark:fill-slate-900"
+          className="fill-blue-600 dark:fill-white transition-colors"
         />
-        <circle cx="0" cy="-6" r="1.8" className="fill-white dark:fill-slate-900" />
+        <circle cx="0" cy="-6" r="1.8" className="fill-blue-600 dark:fill-white transition-colors" />
       </g>
     </svg>
   );

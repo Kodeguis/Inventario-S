@@ -2,16 +2,17 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
+  BarChart3,
   BookOpen, 
   Package, 
   ShoppingCart, 
   TrendingUp, 
   Settings, 
-  Trees,
   Sun,
   Moon,
   LogOut,
-  X
+  X,
+  Layers
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import PinoIcon from '../Common/PinoIcon';
@@ -23,18 +24,39 @@ const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
     }
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18}/>, path: '/' },
-    { id: 'catalog', label: 'Catálogo', icon: <BookOpen size={18}/>, path: '/catalogo' },
-    { id: 'inventory', label: 'Inventario', icon: <Package size={18}/>, path: '/inventario' },
-    { id: 'sales', label: 'Ventas', icon: <ShoppingCart size={18}/>, path: '/ventas' },
-    { id: 'purchases', label: 'Compras', icon: <TrendingUp size={18}/>, path: '/compras' },
-    { id: 'config', label: 'Ajustes', icon: <Settings size={18}/>, path: '/configuracion' }
+  const sections = [
+    {
+      title: "Resumen y Análisis",
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18}/>, path: '/' },
+        { id: 'analytics', label: 'Estadísticas', icon: <BarChart3 size={18}/>, path: '/analytics' },
+      ]
+    },
+    {
+      title: "Gestión de Activos",
+      items: [
+        { id: 'catalog', label: 'Catálogo Maestro', icon: <BookOpen size={18}/>, path: '/catalogo' },
+        { id: 'inventory', label: 'Control Stock', icon: <Package size={18}/>, path: '/inventario' },
+      ]
+    },
+    {
+      title: "Flujo Operativo",
+      items: [
+        { id: 'sales', label: 'Gestión Ventas', icon: <ShoppingCart size={18}/>, path: '/ventas' },
+        { id: 'purchases', label: 'Abastecimiento', icon: <TrendingUp size={18}/>, path: '/compras' },
+      ]
+    },
+    {
+      title: "Configuración",
+      items: [
+        { id: 'config', label: 'Ajustes Sistema', icon: <Settings size={18}/>, path: '/configuracion' }
+      ]
+    }
   ];
 
   const sidebarClasses = `
-    w-64 fixed h-full bg-white dark:bg-slate-950 border-r border-slate-100 dark:border-slate-900 
-    flex flex-col z-[1000] shadow-2xl md:shadow-sm transition-all duration-500 ease-in-out
+    w-64 fixed h-full bg-white dark:bg-black border-r border-slate-200 dark:border-white/5 
+    flex flex-col z-[1000] transition-all duration-500 ease-in-out
     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
   `;
 
@@ -43,62 +65,91 @@ const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
       {/* Overlay for mobile */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] md:hidden transition-opacity" 
+          className="fixed inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-sm z-[999] md:hidden transition-opacity" 
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-8 pb-10 flex items-center justify-between">
+        {/* Logo Section */}
+        <div className="p-6 md:p-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-500 hover:scale-110 transition-transform duration-300">
-               <PinoIcon size={48} />
+             <div className="flex items-center justify-center text-white dark:text-blue-600 p-1.5 rounded-xl bg-blue-600 dark:bg-blue-600/10 border border-blue-600 dark:border-blue-600/20 shadow-lg shadow-blue-600/20 dark:shadow-none">
+               <PinoIcon size={24} />
              </div>
-             <div>
-               <p className="flex flex-col items-start leading-none translate-y-1">
-                 <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-[0.4em]">Inventario</span>
-                 <span className="text-[26px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-500">Pino</span>
-               </p>
+             <div className="flex flex-col leading-none">
+               <span className="text-[17px] font-black text-slate-900 dark:text-white tracking-tighter">Inventario <span className="text-blue-600">PRO</span></span>
+               <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mt-1 italic">Enterprise</span>
              </div>
           </div>
-          <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-slate-400 hover:text-indigo-600 transition-colors">
+          <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-          {menuItems.map(item => (
-            <NavLink 
-              key={item.id} 
-              to={item.path}
-              onClick={() => setIsMobileOpen(false)}
-              className={({ isActive }) => `
-                w-full flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] font-black tracking-[0.2em] transition-all uppercase
-                ${isActive 
-                  ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/25 scale-[1.02]' 
-                  : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'}
-              `}
-            >
-              {item.icon} {item.label}
-            </NavLink>
+        {/* Navigation */}
+        <nav className="flex-1 px-3 space-y-7 overflow-y-auto custom-scrollbar pt-2">
+          {sections.map((section, idx) => (
+            <div key={idx} className="space-y-1.5">
+              <h3 className="px-4 text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 opacity-80">
+                {section.title}
+              </h3>
+              <div className="space-y-1">
+                {section.items.map(item => (
+                  <NavLink 
+                    key={item.id} 
+                    to={item.path}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={({ isActive }) => `
+                      w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                      ${isActive 
+                        ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-white/5' 
+                        : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 hover:text-slate-900 dark:hover:text-white'}
+                    `}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span className={isActive ? 'text-blue-600 dark:text-blue-600' : 'text-slate-400 dark:text-zinc-500'}>
+                          {item.icon}
+                        </span>
+                        <span className="tracking-tight">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <div className="p-6 border-t border-slate-50 dark:border-slate-900 space-y-3">
-           <button 
-             onClick={() => setDarkMode(!darkMode)} 
-             className="w-full h-12 flex items-center justify-center gap-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-800"
-           >
-              {darkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} />}
-              {darkMode ? (isMobileOpen ? 'MODO CLARO' : '') || 'MODO CLARO' : (isMobileOpen ? 'MODO OSCURO' : '') || 'MODO OSCURO'}
-           </button>
-           
-           <button 
-             onClick={handleLogout}
-             className="w-full h-12 flex items-center justify-center gap-3 bg-rose-500/10 text-rose-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all border border-transparent"
-           >
-              <LogOut size={16} /> <span className="md:inline">{isMobileOpen ? 'SALIR DEL SISTEMA' : 'SALIR'}</span>
-           </button>
+        {/* Footer Actions */}
+        <div className="p-4 mt-auto border-t border-slate-100 dark:border-white/5 space-y-2 bg-white dark:bg-black">
+           <div className="flex items-center gap-2 p-1.5 bg-slate-50 dark:bg-zinc-900/40 rounded-xl border border-slate-100 dark:border-white/5 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-white/5">
+                <Layers size={14} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-none">Stefano Pino</span>
+                <span className="text-[9px] text-slate-500 dark:text-zinc-500 mt-0.5">Admin Central</span>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => setDarkMode(!darkMode)} 
+                className="h-10 flex items-center justify-center gap-2 bg-white dark:bg-black hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-lg text-[10px] font-bold text-slate-500 dark:text-zinc-400 transition-all border border-slate-200 dark:border-white/5"
+              >
+                  {darkMode ? <Sun size={14} className="text-amber-500" /> : <Moon size={14} className="text-slate-600" />}
+                  <span className="uppercase text-[9px]">Tema</span>
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="h-10 flex items-center justify-center gap-2 bg-white dark:bg-black hover:bg-blue-600 dark:hover:bg-blue-600/10 hover:text-blue-600 rounded-lg text-[10px] font-bold text-slate-500 dark:text-zinc-400 transition-all border border-slate-200 dark:border-white/5"
+              >
+                  <LogOut size={14} /> 
+                  <span className="uppercase text-[9px]">Salir</span>
+              </button>
+           </div>
         </div>
       </aside>
     </>

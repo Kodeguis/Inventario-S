@@ -26,10 +26,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 font-sans antialiased selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 font-sans antialiased selection:bg-blue-600/30">
       {/* Abstract Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/5 blur-[120px] rounded-full"></div>
       </div>
 
@@ -40,8 +40,8 @@ const LoginPage = () => {
                <PinoIcon size={100} />
             </div>
             <div className="flex flex-col items-center justify-center space-y-1">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Inventario</span>
-              <h1 className="text-5xl font-black text-indigo-500 tracking-tighter uppercase">Pino</h1>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Sistema</span>
+              <h1 className="text-5xl font-black text-blue-600 tracking-tighter uppercase">Inventario <span className="text-white">PRO</span></h1>
             </div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">Acceso Restringido • v.1.0</p>
           </div>
@@ -49,13 +49,13 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-5">
               <div className="space-y-2 group">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-indigo-400 transition-colors">Usuario Maestro</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-blue-400 transition-colors">Usuario Maestro</label>
                 <div className="relative">
                   <User className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={18}/>
                   <input 
                     type="text" 
                     required 
-                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-indigo-500/30 transition-all placeholder:text-slate-600 uppercase" 
+                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-blue-600/30 transition-all placeholder:text-slate-600 uppercase" 
                     placeholder="EJ: SERGIO"
                     value={email}
                     onChange={(e) => setEmail(e.target.value.toLowerCase())}
@@ -64,13 +64,13 @@ const LoginPage = () => {
               </div>
 
               <div className="space-y-2 group">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-indigo-400 transition-colors">Contraseña Maestra</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 group-focus-within:text-blue-400 transition-colors">Contraseña Maestra</label>
                 <div className="relative">
                   <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500 transition-colors" size={18}/>
                   <input 
                     type="password" 
                     required 
-                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-indigo-500/30 transition-all placeholder:text-slate-600" 
+                    className="w-full h-15 bg-white/5 border border-white/5 rounded-2xl px-16 text-sm font-bold text-white outline-none focus:ring-4 ring-indigo-500/10 focus:border-blue-600/30 transition-all placeholder:text-slate-600" 
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -80,7 +80,7 @@ const LoginPage = () => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-[11px] font-bold text-rose-500 uppercase tracking-widest text-center animate-in shake duration-300">
+              <div className="bg-blue-600/10 border border-blue-600/20 p-4 rounded-xl text-[11px] font-bold text-blue-600 uppercase tracking-widest text-center animate-in shake duration-300">
                 {error}
               </div>
             )}
@@ -88,7 +88,7 @@ const LoginPage = () => {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-[0.4em] shadow-2xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+              className="w-full h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-[0.4em] shadow-2xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
             >
               {loading ? (
                 <Loader2 size={20} className="animate-spin" />

@@ -3,262 +3,211 @@ import { useInventory } from '../../context/InventoryContext';
 import { useModals } from '../../context/ModalContext';
 import { 
   TrendingUp, 
-  Star, 
-  Layers, 
   Package, 
   Plus, 
   ShoppingCart, 
-  FileSpreadsheet, 
-  Filter, 
+  FileText, 
   Cloud,
   ArrowUp,
-  ArrowDown,
-  Wallet
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import CustomSelect from '../../components/Common/CustomSelect';
+import KPICard from '../../components/Common/KPICard';
 import { exportToExcel } from '../../utils/excelExport';
-import { supabase } from '../../lib/supabaseClient';
-import { initGoogleContext, saveToGoogleDrive } from '../../utils/googleDrive';
+import { saveToGoogleDrive } from '../../utils/googleDrive';
 
 const DashboardPage = () => {
-  const { products, sales, purchases, categories, settings, loading } = useInventory();
-  const { openModal } = useModals();
-  const [filterMonth, setFilterMonth] = React.useState('all');
-  const [filterYear, setFilterYear] = React.useState('2026');
-  const [filterCategory, setFilterCategory] = React.useState('Todas');
+    const context = useInventory();
+    const { openModal } = useModals();
 
-  React.useEffect(() => {
-    initGoogleContext();
-  }, []);
+    const products = context?.products || [];
+    const sales = context?.sales || [];
+    const purchases = context?.purchases || [];
+    const categories = context?.categories || [];
+    const settings = context?.settings || {};
 
-  const MESES = [
-    { id: 'all', label: 'Todos los meses' }, { id: '0', label: 'Enero' }, { id: '1', label: 'Febrero' }, { id: '2', label: 'Marzo' },
-    { id: '3', label: 'Abril' }, { id: '4', label: 'Mayo' }, { id: '5', label: 'Junio' }, { id: '6', label: 'Julio' },
-    { id: '7', label: 'Agosto' }, { id: '8', label: 'Septiembre' }, { id: '9', label: 'Octubre' }, { id: '10', label: 'Noviembre' }, { id: '11', label: 'Diciembre' }
-  ];
+    const [filterMonth, setFilterMonth] = React.useState('all');
+    const [filterYear, setFilterYear] = React.useState('2026');
+    const [filterCategory, setFilterCategory] = React.useState('Todas');
 
-  const parseDate = (dStr) => {
-    if (!dStr) return new Date();
-    if (dStr.includes('-')) {
-        const parts = dStr.split(' ')[0].split('-');
-        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    }
-    if (dStr.includes('/')) {
-        const parts = dStr.split('/');
-        if (parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]);
-        return new Date(parts[2], parts[1] - 1, parts[0]);
-    }
-    return new Date(dStr);
-  };
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Buenos días";
+        if (hour < 18) return "Buenas tardes";
+        return "Buenas noches";
+    };
 
-  const isPeriodMatch = (itemDate) => {
-    const date = parseDate(itemDate);
-    const matchesYear = date.getFullYear().toString() === filterYear;
-    if (filterMonth === 'all') return matchesYear;
-    return matchesYear && date.getMonth().toString() === filterMonth;
-  };
+    const MESES = [
+        { id: 'all', label: 'Todo el año' }, { id: '0', label: 'Enero' }, { id: '1', label: 'Febrero' }, { id: '2', label: 'Marzo' },
+        { id: '3', label: 'Abril' }, { id: '4', label: 'Mayo' }, { id: '5', label: 'Junio' }, { id: '6', label: 'Julio' },
+        { id: '7', label: 'Agosto' }, { id: '8', label: 'Septiembre' }, { id: '9', label: 'Octubre' }, { id: '10', label: 'Noviembre' }, { id: '11', label: 'Diciembre' }
+    ];
 
-  const dashboardSales = (sales || []).filter(s => 
-    isPeriodMatch(s.date) && 
-    (filterCategory === 'Todas' || s.product_category === filterCategory)
-  );
-  
-  const dashboardPurchases = (purchases || []).filter(p => 
-    isPeriodMatch(p.date) && 
-    (filterCategory === 'Todas' || p.product_category === filterCategory)
-  );
+    const parseDate = (dStr) => {
+        if (!dStr) return new Date();
+        try {
+            if (dStr.includes('-')) {
+                const parts = dStr.split(' ')[0].split('-');
+                return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
+            return new Date(dStr);
+        } catch (e) { return new Date(); }
+    };
 
-  const filteredProducts = (products || []).filter(p => 
-    filterCategory === 'Todas' || p.category === filterCategory
-  );
+    const isPeriodMatch = (itemDate) => {
+        const date = parseDate(itemDate);
+        return date.getFullYear().toString() === filterYear && (filterMonth === 'all' || date.getMonth().toString() === filterMonth);
+    };
 
-  const tRev = dashboardSales.reduce((acc, s) => acc + (s.sale_price_pen * s.quantity || 0), 0);
-  const tProf = dashboardSales.reduce((acc, s) => acc + (s.profit_pen || 0), 0);
-  
-  const rate = parseFloat(settings.exchange_rate) || 0.0039;
+    const dashboardSales = sales.filter(s => isPeriodMatch(s?.date) && (filterCategory === 'Todas' || s?.product_category === filterCategory));
+    const dashboardPurchases = purchases.filter(p => isPeriodMatch(p?.date) && (filterCategory === 'Todas' || p?.product_category === filterCategory));
+    
+    const tRev = dashboardSales.reduce((acc, s) => acc + ((s?.sale_price_pen || 0) * (s?.quantity || 0)), 0);
+    const tProf = dashboardSales.reduce((acc, s) => acc + (s?.profit_pen || 0), 0);
+    const rate = parseFloat(settings?.exchange_rate) || 0.0039;
 
-  const tInvPeriodPEN = dashboardPurchases.reduce((acc, p) => {
-    if (p.currency === 'PEN') return acc + ((p.quantity||0) * (p.cost_pen||0));
-    return acc + ((p.quantity||0) * (p.cost_clp||0) * rate);
-  }, 0);
+    const filteredProducts = products.filter(p => filterCategory === 'Todas' || p?.category === filterCategory);
+    
+    const tInvPeriodPEN = dashboardPurchases.reduce((acc, p) => p?.currency === 'PEN' ? acc + ((p?.quantity||0) * (p?.cost_pen||0)) : acc + ((p?.quantity||0) * (p?.cost_clp||0) * rate), 0);
+    const tInvGlobalPEN = filteredProducts.reduce((acc, p) => p?.currency === 'PEN' ? acc + ((p?.stock||0) * (p?.cost_pen||0)) : acc + ((p?.stock||0) * (p?.cost_clp||0) * rate), 0);
+    const tInvGlobalCLP = filteredProducts.reduce((acc, p) => p?.currency === 'CLP' ? acc + ((p?.stock||0) * (p?.cost_clp||0)) : acc, 0);
+    const tInvPeriodCLP = dashboardPurchases.reduce((acc, p) => p?.currency === 'CLP' ? acc + ((p?.quantity||0) * (p?.cost_clp||0)) : acc, 0);
+    // Solo contar artículos que tienen stock mayor a 0 pero menor al límite (Artículos que se están agotando)
+    const lStock = filteredProducts.filter(p => (p?.stock || 0) > 0 && (p?.stock || 0) < 5).length;
 
-  const tInvPeriodCLP = dashboardPurchases.reduce((acc, p) => {
-    if (p.currency === 'CLP') return acc + ((p.quantity||0) * (p.cost_clp||0));
-    return acc;
-  }, 0);
-
-  const tInvGlobalPEN = filteredProducts.reduce((acc, p) => {
-    if (p.currency === 'PEN') return acc + ((p.stock||0) * (p.cost_pen||0));
-    return acc + ((p.stock||0) * (p.cost_clp||0) * rate);
-  }, 0);
-
-  const tInvGlobalCLP = filteredProducts.reduce((acc, p) => {
-    if (p.currency === 'CLP') return acc + ((p.stock||0) * (p.cost_clp||0));
-    return acc;
-  }, 0);
-
-  const productsWithPurchases = new Set(purchases.map(pu => pu.product_id));
-  const lStock = filteredProducts.filter(p => productsWithPurchases.has(p.id) && (p.stock || 0) < 5).length;
-
-  const handleExportExcel = () => {
-    try {
-      exportToExcel(sales, products, categories, purchases);
-    } catch (error) {
-      alert('Error al generar Excel localmente');
-    }
-  };
-
-  const handleBackupDrive = async () => {
-    try {
-      const excelBlob = exportToExcel(sales, products, categories, purchases, false);
-      const fileName = `Respaldo_Inventario_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
-
-      await saveToGoogleDrive(excelBlob, fileName);
-      
-      alert('¡Sincronización con Google Drive exitosa!');
-    } catch (error) {
-      if (error.error === 'popup_closed_by_user') return;
-      alert('Error al conectar con Google Drive. Verifica tu conexión o el Client ID.');
-      console.error(error);
-    }
-  };
-
-  return (
-    <div className="space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-         <div>
-           <h2 className="text-3xl font-black tracking-tight uppercase">Análisis Operativo</h2>
-           <p className="text-[11px] font-bold text-indigo-500/60 uppercase tracking-widest mt-1">Métricas inteligentes y control de flujo</p>
-         </div>
-         
-         <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all focus-within:ring-4 ring-indigo-500/10">
-             <span className="text-[9px] font-black uppercase opacity-30 ml-3 tracking-widest whitespace-nowrap">Reporte:</span>
-             <CustomSelect 
-               value={MESES.find(m => m.id === filterMonth)?.label} 
-               onChange={val => {
-                 const monthId = MESES.find(m => m.label === val)?.id;
-                 setFilterMonth(monthId);
-               }}
-               options={MESES.map(m => m.label)}
-               className="w-48 h-10"
-             />
-             <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1" />
-             <CustomSelect 
-               value={filterYear} 
-               onChange={val => setFilterYear(val)}
-               options={['2026', '2027', '2028']}
-               className="w-28 h-10"
-             />
-           </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex items-center gap-2 pr-4">
-         <div className="bg-slate-50 dark:bg-slate-950 px-4 h-10 flex items-center gap-2 rounded-xl">
-           <Filter size={14} className="text-indigo-600 opacity-40" />
-           <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Categoría</span>
-         </div>
-         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-            {['Todas', ...(categories || []).map(c => c.name)].map(c => (
-               <button 
-                 key={c} 
-                 onClick={() => setFilterCategory(c)} 
-                 className={`px-5 h-10 whitespace-nowrap text-[9px] font-black rounded-xl transition-all border ${filterCategory === c ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-               >
-                 {c.toUpperCase()}
-               </button>
-            ))}
-         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-         {[
-           { l: 'Ingresos Brutos', v: `S/ ${tRev.toLocaleString()}`, c: 'bg-white', i: <TrendingUp size={24}/> },
-           { 
-               l: 'Ganancia Neta', 
-               v: `S/ ${tProf.toLocaleString()}`, 
-               c: 'bg-indigo-600 text-white', 
-               i: <Star size={24}/>,
-               accent: true
-           },
-           { 
-               l: 'Capital de Inventario', 
-               v: `S/ ${tInvGlobalPEN.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 
-               v_clp: tInvGlobalCLP > 0 ? `${tInvGlobalCLP.toLocaleString(undefined, { maximumFractionDigits: 0 })} CLP` : null,
-               sub: `Inversión Ciclo: S/ ${tInvPeriodPEN.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-               sub_clp: tInvPeriodCLP > 0 ? `Inc. ${tInvPeriodCLP.toLocaleString(undefined, { maximumFractionDigits: 0 })} CLP` : null,
-               c: 'bg-white', 
-               i: <Wallet size={24}/> 
-           },
-           { l: 'Items en Riesgo', v: lStock, c: 'bg-white', i: <Package size={24}/>, critical: lStock > 0 }
-         ].map((d, i) => (
-           <div key={i} className={`${d.accent ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 border-transparent' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'} p-8 rounded-3xl border relative group hover:scale-[1.03] transition-all duration-300`}>
-              <div className={`p-3 w-fit rounded-2xl mb-8 ${d.accent ? 'bg-white/10 text-white' : 'bg-slate-50 dark:bg-slate-950 text-indigo-600'}`}>
-                {d.i}
-              </div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-2 ${d.accent ? 'opacity-70' : 'opacity-40'}`}>{d.l}</p>
-              <p className="text-3xl font-black tabular-nums tracking-tighter">{d.v}</p>
-              {d.v_clp && <p className="text-xs font-bold text-slate-400 mt-1">{d.v_clp}</p>}
-              {d.sub && (
-                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 space-y-1">
-                   <p className="text-[9px] font-bold uppercase opacity-40">{d.sub}</p>
-                   {d.sub_clp && <p className="text-[8px] font-bold uppercase opacity-30">{d.sub_clp}</p>}
+    return (
+        <div className="space-y-8 animate-in fade-in duration-700 pb-12 px-1">
+            <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-10 pt-4 border-b border-slate-200 dark:border-white/10">
+                <div className="space-y-1">
+                    <h1 className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                        {getGreeting()}, <span className="text-blue-600 font-black">Stefano</span>
+                    </h1>
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1">SISTEMA MAESTRO DE OPERACIONES · CONTROL CENTRAL</p>
                 </div>
-              )}
-              {d.critical && (
-                <div className="absolute top-6 right-6 w-3 h-3 bg-rose-500 rounded-full animate-ping opacity-75"></div>
-              )}
-           </div>
-         ))}
-      </div>
+                
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest">Periodo</label>
+                        <CustomSelect 
+                            value={MESES.find(m => m.id === filterMonth)?.label || 'Todo el año'} 
+                            onChange={val => setFilterMonth(MESES.find(m => m.label === val)?.id || 'all')} 
+                            options={MESES.map(m => m.label)} 
+                            className="h-9 w-44 shadow-sm dark:shadow-none" 
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest">Año</label>
+                        <CustomSelect 
+                            value={filterYear} 
+                            onChange={(v) => setFilterYear(v || '2026')} 
+                            options={['2026', '2027', '2028']} 
+                            className="h-9 w-24 shadow-sm dark:shadow-none" 
+                        />
+                    </div>
+                </div>
+            </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-         <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10">
-            <div className="flex justify-between items-center text-slate-400">
-              <h3 className="text-[11px] font-black uppercase tracking-widest opacity-60">Puntos de Entrada</h3>
-              <div className="flex items-center gap-2">
-                 <span className="text-[9px] font-bold uppercase italic">Acciones Rápidas</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-               <button onClick={() => openModal('purchase')} className="p-12 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex flex-col items-center gap-5 text-slate-400 hover:text-indigo-600 group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/5 transition-all"></div>
-                  <Plus size={36} className="group-hover:rotate-90 transition-transform duration-500 relative z-10"/> 
-                  <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Nueva Compra</span>
-               </button>
-               <button onClick={() => openModal('sale')} className="p-12 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 hover:border-emerald-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex flex-col items-center gap-5 text-slate-400 hover:text-emerald-600 group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/5 transition-all"></div>
-                  <ShoppingCart size={36} className="group-hover:scale-110 transition-transform duration-500 relative z-10" /> 
-                  <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Nueva Venta</span>
-               </button>
-            </div>
-         </div>
+            <nav className="flex items-center gap-2 p-1 bg-white dark:bg-black border border-slate-200 dark:border-white/10 rounded-lg overflow-x-auto no-scrollbar shadow-sm dark:shadow-none">
+                {['Todas', ...(categories || []).map(c => c?.name || '')].filter(Boolean).map(c => (
+                    <button 
+                        key={c} 
+                        onClick={() => setFilterCategory(c)} 
+                        className={`px-6 h-8 whitespace-nowrap text-[10px] font-bold uppercase rounded-md transition-all ${filterCategory === c ? 'bg-slate-100 dark:bg-zinc-900 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10' : 'text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                    >
+                        {c}
+                    </button>
+                ))}
+            </nav>
 
-         <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-10 flex flex-col justify-between">
-            <h3 className="text-[11px] font-black uppercase tracking-widest opacity-30">Gestión Documental</h3>
-            <div className="space-y-6">
-               <div className="flex gap-4">
-                  <button 
-                    onClick={handleExportExcel}
-                    className="flex-1 h-16 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-600/30 font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-between px-8 group"
-                   >
-                     <span>Generar Excel Premium</span> 
-                     <FileSpreadsheet size={22} className="group-hover:rotate-12 transition-transform"/>
-                  </button>
-                  <button className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all active:scale-90 border border-slate-200 dark:border-slate-700">
-                    <Filter size={20}/>
-                  </button>
-               </div>
-               <button 
-                 onClick={handleBackupDrive}
-                 className="w-full h-14 flex items-center justify-center gap-4 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase border border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-indigo-600/10 hover:text-indigo-600 transition-all"
-               >
-                  <Cloud size={18}/> Respaldar en Google Drive
-               </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPICard label="Ingreso Bruto" value={`S/ ${(tRev || 0).toLocaleString()}`} icon={<ShoppingCart size={15}/>} color="emerald" sub="Flujo bruto recibido" />
+                <KPICard label="Ganancia Proyectada" value={`S/ ${(tProf || 0).toLocaleString()}`} icon={<TrendingUp size={15}/>} color="emerald" sub="Margen real de ahorro" />
+                <KPICard 
+                    label="Capital en Stock" 
+                    value={`S/ ${(tInvGlobalPEN || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
+                    icon={<Package size={15}/>} 
+                    color="blue" 
+                    sub={(tInvGlobalCLP || 0) > 0 ? `$ ${tInvGlobalCLP.toLocaleString()} CLP` : 'Capital pendiente'}
+                    footer={(
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 space-y-1">
+                            <p className="text-[9px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-tighter">Inversión Ciclo: S/ {(tInvPeriodPEN || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                            {(tInvPeriodCLP || 0) > 0 && <p className="text-[8px] font-bold text-slate-400 dark:text-zinc-400 uppercase tracking-tighter italic">Inc. {tInvPeriodCLP.toLocaleString()} CLP</p>}
+                        </div>
+                    )}
+                />
+                <KPICard label="Artículos en Riesgo" value={lStock || 0} icon={<Zap size={15}/>} color="red" sub="Bajo el límite de stock" />
             </div>
-         </div>
-      </div>
-    </div>
-  );
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 p-8 bg-white dark:bg-zinc-950/30 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+                    <h2 className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-10 opacity-70">Panel de Operación Directa</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <QuickAction 
+                            onClick={() => openModal('purchase')} 
+                            icon={<Plus size={20} />} 
+                            title="Abastecimiento" 
+                            desc="Incrementar stock de productos." 
+                            color="blue" 
+                        />
+                        <QuickAction 
+                            onClick={() => openModal('sale')} 
+                            icon={<ShoppingCart size={20} />} 
+                            title="Nueva Venta" 
+                            desc="Registrar despacho y utilidad." 
+                            color="emerald" 
+                        />
+                    </div>
+                </div>
+
+                <div className="p-8 bg-white dark:bg-black border border-slate-200 dark:border-white/10 flex flex-col justify-between relative overflow-hidden group rounded-2xl shadow-xl dark:shadow-2xl">
+                    <div>
+                        <div className="flex items-center gap-3 mb-8">
+                            <FileText size={16} className="text-slate-400 dark:text-zinc-500" />
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400">Canales de Reporte</h3>
+                        </div>
+                        <div className="space-y-4">
+                            <button onClick={() => exportToExcel(sales, products, categories, purchases)} className="w-full h-12 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-black dark:hover:bg-zinc-200 transition-all flex items-center justify-between px-6 shadow-lg">
+                                <span>Exportar Excel</span>
+                                <ArrowUp size={14} />
+                            </button>
+                            <button onClick={() => saveToGoogleDrive()} className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/10 transition-all flex items-center justify-between px-6">
+                                <span>Sincronizar Cloud</span>
+                                <Cloud size={14} className="text-blue-600" />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="mt-10 pt-6 border-t border-slate-100 dark:border-white/5 flex justify-between items-end">
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Última Sincro</p>
+                            <p className="text-[11px] font-bold text-blue-600">Sesión Activa</p>
+                        </div>
+                        <Zap size={20} className="text-yellow-400 opacity-20" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 };
+
+
+
+const QuickAction = ({ onClick, icon, title, desc, color }) => {
+    const iconColors = color === 'emerald' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : 'text-blue-600 bg-blue-600/10 border-blue-600/20';
+    const hoverBorder = color === 'emerald' ? 'hover:border-emerald-500/50' : 'hover:border-blue-600/50';
+
+    return (
+        <button onClick={onClick} className={`group p-6 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-zinc-950/50 hover:bg-white dark:hover:bg-zinc-900 ${hoverBorder} transition-all text-left shadow-sm dark:shadow-xl`}>
+            <div className="flex items-center justify-between mb-6">
+                <div className={`p-3 rounded-md border ${iconColors} group-hover:scale-110 transition-transform`}>
+                    {icon}
+                </div>
+                <ArrowRight size={14} className="text-slate-400 dark:text-zinc-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <h4 className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-1">{title}</h4>
+            <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-medium leading-relaxed">{desc}</p>
+        </button>
+    );
+}
 
 export default DashboardPage;

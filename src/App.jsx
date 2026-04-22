@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 
 // Pages
 import DashboardPage from './pages/Dashboard/DashboardPage';
+import AnalyticsPage from './pages/Analytics/AnalyticsPage';
 import CatalogPage from './pages/Catalog/CatalogPage';
 import InventoryPage from './pages/Inventory/InventoryPage';
 import SalesPage from './pages/Sales/SalesPage';
@@ -17,7 +18,7 @@ import SettingsPage from './pages/Settings/SettingsPage';
 import { Menu } from 'lucide-react';
 
 const AppContent = () => {
-  const { user, loading } = useInventory();
+  const { user, loading, settings } = useInventory();
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -40,7 +41,7 @@ const AppContent = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#020617] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans antialiased overflow-x-hidden">
+      <div className="min-h-screen bg-[#FDFDFD] dark:bg-black text-slate-900 dark:text-white flex flex-col md:flex-row font-sans antialiased overflow-x-hidden">
         <Sidebar 
           darkMode={darkMode} 
           setDarkMode={setDarkMode} 
@@ -49,12 +50,12 @@ const AppContent = () => {
         />
         
         {/* Mobile Header */}
-        <div className="md:hidden sticky top-0 z-[500] w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-900 p-4 flex items-center justify-between">
+        <div className="md:hidden sticky top-0 z-[500] w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-slate-100 dark:border-white/5 p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-               <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+               <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
                   <Menu size={18} onClick={() => setIsMobileOpen(true)} />
                </div>
-               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Control Maestro</span>
+               <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-600">Control Maestro</span>
             </div>
             <div className="flex items-center gap-3">
                {/* Small status or user info could go here */}
@@ -65,6 +66,7 @@ const AppContent = () => {
           <div className="w-full max-w-7xl p-4 md:p-12">
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/catalogo" element={<CatalogPage />} />
               <Route path="/inventario" element={<InventoryPage />} />
               <Route path="/ventas" element={<SalesPage />} />

@@ -12,7 +12,9 @@ export const InventoryProvider = ({ children }) => {
   const [purchases, setPurchases] = useState([]);
   const [categories, setCategories] = useState([]);
   const [batches, setBatches] = useState([]);
-  const [settings, setSettings] = useState({ exchange_rate: '0.0039' });
+  const [settings, setSettings] = useState({ 
+    exchange_rate: '0.0039'
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,10 +87,10 @@ export const InventoryProvider = ({ children }) => {
       });
       setPurchases(flattenedPurchases);
 
-      if (stRows) {
+      if (stRows && stRows.length > 0) {
         const stObj = {};
         stRows.forEach(r => stObj[r.key] = r.value);
-        if (stObj.exchange_rate) setSettings(stObj);
+        setSettings(prev => ({ ...prev, ...stObj }));
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -109,11 +111,7 @@ export const InventoryProvider = ({ children }) => {
     settings,
     loading,
     refreshData,
-    setSettings,
-    onAddPurchase: () => {}, // Stubs to prevent crashes if called elsewhere
-    onSaveEditPurchase: () => {},
-    onAddSale: () => {},
-    onExportExcel: () => {}
+    setSettings
   };
 
   return (
