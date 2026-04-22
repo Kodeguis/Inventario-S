@@ -15,7 +15,7 @@ import {
 import CustomSelect from '../../components/Common/CustomSelect';
 import KPICard from '../../components/Common/KPICard';
 import { exportToExcel } from '../../utils/excelExport';
-import { saveToGoogleDrive } from '../../utils/googleDrive';
+import { saveToGoogleDrive, initGoogleContext } from '../../utils/googleDrive';
 
 const DashboardPage = () => {
     const context = useInventory();
@@ -25,11 +25,17 @@ const DashboardPage = () => {
     const sales = context?.sales || [];
     const purchases = context?.purchases || [];
     const categories = context?.categories || [];
+    const batches = context?.batches || [];
     const settings = context?.settings || {};
 
     const [filterMonth, setFilterMonth] = React.useState('all');
     const [filterYear, setFilterYear] = React.useState('2026');
     const [filterCategory, setFilterCategory] = React.useState('Todas');
+    const [isSyncing, setIsSyncing] = React.useState(false);
+
+    React.useEffect(() => {
+        initGoogleContext();
+    }, []);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -77,6 +83,24 @@ const DashboardPage = () => {
     const lStock = filteredProducts.filter(p => (p?.stock || 0) > 0 && (p?.stock || 0) < 5).length;
 
     const { user } = context;
+
+    const handleCloudSync = async () => {
+        if (isSyncing) return;
+        setIsSyncing(true);
+        try {
+            const buffer = await exportToExcel(sales, products, categories, purchases, batches, false);
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const fileName = `RESPALDO_CLOUD_${new Date().toISOString().split('T')[0]}.xlsx`;
+            await saveToGoogleDrive(blob, fileName);
+            alert("¡Sincronización exitosa! El archivo está en tu Google Drive.");
+        } catch (err) {
+            console.error(err);
+            alert("Error en la sincronización: " + err.message);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const getUserName = () => {
         if (!user) return 'Usuario';
         if (user.user_metadata?.full_name) return user.user_metadata.full_name;
@@ -180,12 +204,12 @@ const DashboardPage = () => {
                             <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400">Canales de Reporte</h3>
                         </div>
                         <div className="space-y-4">
-                            <button onClick={() => exportToExcel(sales, products, categories, purchases)} className="w-full h-12 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-black dark:hover:bg-zinc-200 transition-all flex items-center justify-between px-6 shadow-lg">
+                            <button onClick={() => exportToExcel(sales, products, categories, purchases, batches)} className="w-full h-12 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-black dark:hover:bg-zinc-200 transition-all flex items-center justify-between px-6 shadow-lg">
                                 <span>Exportar Excel</span>
                                 <ArrowUp size={14} />
                             </button>
-                            <button onClick={() => saveToGoogleDrive()} className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/10 transition-all flex items-center justify-between px-6">
-                                <span>Sincronizar Cloud</span>
+                            <button onClick={handleCloudSync} disabled={isSyncing} className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/10 transition-all flex items-center justify-between px-6">
+                                <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Cloud'}</span>
                                 <Cloud size={14} className="text-blue-600" />
                             </button>
                         </div>

@@ -16,6 +16,8 @@ import {
 import { useModals } from '../../context/ModalContext';
 import CustomSelect from '../../components/Common/CustomSelect';
 import { supabase } from '../../lib/supabaseClient';
+import { exportCatalogToPDF } from '../../utils/pdfExport';
+import { FileText as FilePdf } from 'lucide-react';
 
 const CatalogPage = () => {
     const { products, categories, settings, refreshData } = useInventory();
@@ -61,12 +63,20 @@ const CatalogPage = () => {
                     <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1">Gestión Central de Referencia y Márgenes de Ganancia</p>
                 </div>
                 
-                <button 
-                   onClick={() => openModal('product')} 
-                   className="h-10 px-6 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg shadow-blue-600/20 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                   <Plus size={16}/> <span>Nuevo Registro</span>
-                </button>
+                <div className="flex gap-3">
+                    <button 
+                       onClick={() => exportCatalogToPDF(filteredCatalog, categories)} 
+                       className="h-10 px-6 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 text-[10px] font-black uppercase tracking-widest rounded-md shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                       <FilePdf size={16} className="text-red-500" /> <span>Exportar Catálogo PDF</span>
+                    </button>
+                    <button 
+                       onClick={() => openModal('product')} 
+                       className="h-10 px-6 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg shadow-blue-600/20 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                       <Plus size={16}/> <span>Nuevo Registro</span>
+                    </button>
+                </div>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 px-1">
