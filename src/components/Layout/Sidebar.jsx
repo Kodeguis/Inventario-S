@@ -15,13 +15,34 @@ import {
   Layers
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { useInventory } from '../../context/InventoryContext';
 import PinoIcon from '../Common/PinoIcon';
 
 const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
+  const { user } = useInventory();
+
   const handleLogout = async () => {
     if (confirm('¿Cerrar sesión del sistema maestro?')) {
       await supabase.auth.signOut();
     }
+  };
+
+  // Extract name from user object or email
+  const getUserName = () => {
+    if (!user) return 'Usuario';
+    
+    // Check if name is in metadata
+    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
+    if (user.user_metadata?.name) return user.user_metadata.name;
+    
+    // Otherwise extract from email
+    const email = user.email || '';
+    const namePart = email.split('@')[0];
+    // Capitalize first letter and replace any dots/underscores with spaces
+    return namePart
+      .split(/[._]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ') || 'Usuario';
   };
 
   const sections = [
@@ -129,7 +150,7 @@ const Sidebar = ({ darkMode, setDarkMode, isMobileOpen, setIsMobileOpen }) => {
                 <Layers size={14} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-none">Stefano Pino</span>
+                <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-none capitalize">{getUserName()}</span>
                 <span className="text-[9px] text-slate-500 dark:text-zinc-500 mt-0.5">Admin Central</span>
               </div>
            </div>

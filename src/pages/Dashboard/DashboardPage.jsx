@@ -76,12 +76,25 @@ const DashboardPage = () => {
     // Solo contar artículos que tienen stock mayor a 0 pero menor al límite (Artículos que se están agotando)
     const lStock = filteredProducts.filter(p => (p?.stock || 0) > 0 && (p?.stock || 0) < 5).length;
 
+    const { user } = context;
+    const getUserName = () => {
+        if (!user) return 'Usuario';
+        if (user.user_metadata?.full_name) return user.user_metadata.full_name;
+        if (user.user_metadata?.name) return user.user_metadata.name;
+        const email = user.email || '';
+        const namePart = email.split('@')[0];
+        return namePart
+          .split(/[._]/)
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join(' ') || 'Usuario';
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700 pb-12 px-1">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-10 pt-4 border-b border-slate-200 dark:border-white/10">
                 <div className="space-y-1">
                     <h1 className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
-                        {getGreeting()}, <span className="text-blue-600 font-black">Stefano</span>
+                        {getGreeting()}, <span className="text-blue-600 font-black">{getUserName()}</span>
                     </h1>
                     <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1">SISTEMA MAESTRO DE OPERACIONES · CONTROL CENTRAL</p>
                 </div>
